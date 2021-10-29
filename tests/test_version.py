@@ -1,5 +1,5 @@
-import python_template
+import wanikani_apprentice
 
 
 def test_version():
-    assert python_template.__version__ is not None
+    assert wanikani_apprentice.__version__ is not None

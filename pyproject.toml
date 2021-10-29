@@ -3,10 +3,10 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "python_template"
+name = "wanikani_apprentice"
 authors = [{name = "Andy Freeland", email = "andy@andyfreeland.net"}]
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
 [project.urls]
-Home = "https://github.com/rouge8/python-template"
+Home = "https://github.com/rouge8/wanikani-apprentice"
