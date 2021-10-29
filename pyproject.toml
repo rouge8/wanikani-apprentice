@@ -8,5 +8,10 @@ authors = [{name = "Andy Freeland", email = "andy@andyfreeland.net"}]
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 
+dependencies = [
+  "attrs",
+  "requests",
+]
+
 [project.urls]
 Home = "https://github.com/rouge8/wanikani-apprentice"
