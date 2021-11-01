@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterable
 import enum
+import typing
 
 import attr
 import httpx
@@ -20,7 +21,7 @@ class WaniKaniAPIClient:
     api_key: str = attr.field(repr=False)
     client: httpx.AsyncClient = attr.field(factory=httpx.AsyncClient)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self.client.headers.update(
             {
                 "Authorization": f"Bearer {self.api_key}",
@@ -28,7 +29,7 @@ class WaniKaniAPIClient:
             },
         )
 
-    async def assignments(self) -> list[dict]:
+    async def assignments(self) -> list[dict[str, typing.Any]]:
         """Get all Apprentice assignments"""
         # TODO: Handle possible (but unlikely) pagination
         resp = await self.client.get(
@@ -38,9 +39,12 @@ class WaniKaniAPIClient:
                 "hidden": "false",
             },
         )
-        return resp.json()["data"]
+        return resp.json()["data"]  # type: ignore[no-any-return]
 
-    async def _subjects(self, subject_type: SubjectType) -> AsyncIterable[dict]:
+    async def _subjects(
+        self,
+        subject_type: SubjectType,
+    ) -> AsyncIterable[dict[str, typing.Any]]:
         next_url = f"{self.BASE_URL}/subjects"
 
         while next_url is not None:
@@ -55,14 +59,14 @@ class WaniKaniAPIClient:
             for subject in resp["data"]:
                 yield subject
 
-    async def radicals(self) -> AsyncIterable[dict]:
+    async def radicals(self) -> AsyncIterable[dict[str, typing.Any]]:
         """Get all radicals"""
         return self._subjects(SubjectType.RADICAL)
 
-    async def kanji(self) -> AsyncIterable[dict]:
+    async def kanji(self) -> AsyncIterable[dict[str, typing.Any]]:
         """Get all kanji"""
         return self._subjects(SubjectType.KANJI)
 
-    async def vocabulary(self) -> AsyncIterable[dict]:
+    async def vocabulary(self) -> AsyncIterable[dict[str, typing.Any]]:
         """Get all vocabulary"""
         return self._subjects(SubjectType.VOCABULARY)
