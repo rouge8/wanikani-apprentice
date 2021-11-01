@@ -37,3 +37,5 @@ sniffio==1.2.0
     #   httpx
 starlette==0.16.0
     # via wanikani-apprentice
+structlog==21.2.0
+    # via wanikani-apprentice

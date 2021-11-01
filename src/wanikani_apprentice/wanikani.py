@@ -1,16 +1,20 @@
 from collections.abc import AsyncIterable
 import enum
+import time
 import typing
 
 import attr
 import ciso8601
 import httpx
+import structlog
 
 from .db import DB
 from .models import Assignment
 from .models import Kanji
 from .models import Radical
 from .models import Vocabulary
+
+log = structlog.get_logger()
 
 APPRENTICE_SRS_STAGES = [1, 2, 3, 4]
 
@@ -38,12 +42,29 @@ class WaniKaniAPIClient:
             },
         )
 
+    async def _request(self, path: str, params: dict[str, str]) -> httpx.Response:
+        log.info("requesting", path=path, params=params)
+        start = time.time()
+        resp = await self.client.get(
+            f"{self.BASE_URL}/{path}",
+            params=params,
+        )
+        end = time.time()
+        log.info(
+            "requested",
+            path=path,
+            params=params,
+            status_code=resp.status_code,
+            duration=end - start,
+        )
+        return resp
+
     async def assignments(self) -> AsyncIterable[Assignment]:
         """Get all Apprentice assignments"""
         # TODO: Handle possible (but unlikely) pagination
-        resp = await self.client.get(
-            f"{self.BASE_URL}/assignments",
-            params={
+        resp = await self._request(
+            "assignments",
+            {
                 "srs_stages": ",".join(str(stage) for stage in APPRENTICE_SRS_STAGES),
                 "hidden": "false",
             },
@@ -73,16 +94,18 @@ class WaniKaniAPIClient:
         self,
         subject_type: SubjectType,
     ) -> AsyncIterable[dict[str, typing.Any]]:
-        next_url = f"{self.BASE_URL}/subjects"
+        next_url = "subjects"
 
         while next_url is not None:
-            resp = await self.client.get(
+            resp = await self._request(
                 next_url,
-                params={"types": subject_type.value, "hidden": "false"},
+                {"types": subject_type.value, "hidden": "false"},
             )
             resp = resp.json()
 
             next_url = resp["pages"]["next_url"]
+            if next_url is not None:
+                next_url = next_url.split(f"{self.BASE_URL}/", 1)[1]
 
             for subject in resp["data"]:
                 yield subject
