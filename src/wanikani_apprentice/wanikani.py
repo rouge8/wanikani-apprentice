@@ -33,14 +33,7 @@ class WaniKaniAPIClient:
     client: httpx.AsyncClient = attr.field(factory=httpx.AsyncClient)
 
     def __attrs_post_init__(self) -> None:
-        self.client.headers.update(
-            {
-                # TODO: Move Authorization out of here so that the HTTPX client
-                # can be shared between APIClients
-                "Authorization": f"Bearer {self.api_key}",
-                "Wanikani-Revision": "20170710",
-            },
-        )
+        self.client.headers.update({"Wanikani-Revision": "20170710"})
 
     async def _request(self, path: str, params: dict[str, str]) -> httpx.Response:
         log.info("requesting", path=path, params=params)
@@ -48,6 +41,7 @@ class WaniKaniAPIClient:
         resp = await self.client.get(
             f"{self.BASE_URL}/{path}",
             params=params,
+            headers={"Authorization": f"Bearer {self.api_key}"},
         )
         end = time.time()
         log.info(

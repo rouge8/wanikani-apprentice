@@ -12,7 +12,13 @@ from wanikani_apprentice.wanikani import SubjectType
 
 @pytest.mark.asyncio
 class TestWaniKaniAPIClient:
-    async def test_assignments(self, client, httpx_mock, faker):
+    @pytest.fixture
+    def headers(self, client):
+        return dict(client.client.headers) | {
+            "Authorization": f"Bearer {client.api_key}",
+        }
+
+    async def test_assignments(self, headers, client, httpx_mock, faker):
         assignments = [
             {
                 "id": faker.random_int(),
@@ -93,7 +99,7 @@ class TestWaniKaniAPIClient:
                 f"{client.BASE_URL}/assignments",
                 params={"srs_stages": "1,2,3,4", "hidden": "false"},
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "data": assignments,
             },
@@ -102,7 +108,7 @@ class TestWaniKaniAPIClient:
         resp = [a async for a in client.assignments()]
         assert resp == expected_assignments
 
-    async def test_radicals(self, client, httpx_mock, faker):
+    async def test_radicals(self, headers, client, httpx_mock, faker):
         radicals = [
             {
                 "id": faker.random_int(),
@@ -141,7 +147,7 @@ class TestWaniKaniAPIClient:
                 f"{client.BASE_URL}/subjects",
                 params={"types": "radical", "hidden": "false"},
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": None,
@@ -153,7 +159,7 @@ class TestWaniKaniAPIClient:
         resp = [r async for r in client.radicals()]
         assert resp == expected_radicals
 
-    async def test_kanji(self, client, httpx_mock, faker):
+    async def test_kanji(self, headers, client, httpx_mock, faker):
         kanji = [
             {
                 "id": faker.random_int(),
@@ -206,7 +212,7 @@ class TestWaniKaniAPIClient:
                 f"{client.BASE_URL}/subjects",
                 params={"types": "kanji", "hidden": "false"},
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=12345",  # noqa: E501
@@ -219,7 +225,7 @@ class TestWaniKaniAPIClient:
                 f"{client.BASE_URL}/subjects",
                 params={"types": "kanji", "hidden": "false", "page_after_id": "12345"},
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": None,
@@ -231,7 +237,7 @@ class TestWaniKaniAPIClient:
         resp = [k async for k in client.kanji()]
         assert resp == expected_kanji
 
-    async def test_vocabulary(self, client, httpx_mock, faker):
+    async def test_vocabulary(self, headers, client, httpx_mock, faker):
         vocabulary = [
             {
                 "id": faker.random_int(),
@@ -284,7 +290,7 @@ class TestWaniKaniAPIClient:
                 f"{client.BASE_URL}/subjects",
                 params={"types": "vocabulary", "hidden": "false"},
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=987",  # noqa: E501
@@ -301,7 +307,7 @@ class TestWaniKaniAPIClient:
                     "page_after_id": "987",
                 },
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=1234",  # noqa: E501
@@ -318,7 +324,7 @@ class TestWaniKaniAPIClient:
                     "page_after_id": "1234",
                 },
             ),
-            headers=client.client.headers,
+            headers=headers,
             json={
                 "pages": {
                     "next_url": None,
