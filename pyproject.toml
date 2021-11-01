@@ -16,3 +16,7 @@ dependencies = [
 
 [project.urls]
 Home = "https://github.com/rouge8/wanikani-apprentice"
+
+[tool.mypy]
+strict = true
+allow_redefinition = true
