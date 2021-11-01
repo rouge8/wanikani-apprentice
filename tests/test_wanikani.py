@@ -1,32 +1,92 @@
+import ciso8601
 from httpx import URL
 import pytest
 
-from wanikani_apprentice.wanikani import WaniKaniAPIClient
+from wanikani_apprentice.db import DB
+from wanikani_apprentice.models import Assignment
+from wanikani_apprentice.models import Kanji
+from wanikani_apprentice.models import Radical
+from wanikani_apprentice.models import Vocabulary
+from wanikani_apprentice.wanikani import SubjectType
 
 
 @pytest.mark.asyncio
 class TestWaniKaniAPIClient:
-    @pytest.fixture
-    async def client(self):
-        client = WaniKaniAPIClient("fake-key")
-        yield client
-        await client.client.aclose()
-
     async def test_assignments(self, client, httpx_mock, faker):
-        expected_assignments = [
+        assignments = [
             {
                 "id": faker.random_int(),
                 "object": "assignment",
                 "data": {
                     "subject_id": faker.random_int(),
-                    "subject_type": faker.random_element(
-                        ["radical", "kanji", "vocabulary"],
-                    ),
+                    "subject_type": "radical",
                     "srs_stage": faker.random_int(),
+                    "available_at": faker.iso8601() + "Z",
                 },
-            }
-            for _ in range(faker.random_int(min=1, max=10))
+            },
+            {
+                "id": faker.random_int(),
+                "object": "assignment",
+                "data": {
+                    "subject_id": faker.random_int(),
+                    "subject_type": "kanji",
+                    "srs_stage": faker.random_int(),
+                    "available_at": faker.iso8601() + "Z",
+                },
+            },
+            {
+                "id": faker.random_int(),
+                "object": "assignment",
+                "data": {
+                    "subject_id": faker.random_int(),
+                    "subject_type": "vocabulary",
+                    "srs_stage": faker.random_int(),
+                    "available_at": faker.iso8601() + "Z",
+                },
+            },
         ]
+        expected_assignments = []
+        for assignment in assignments:
+            subject_id = assignment["data"]["subject_id"]
+            subject_type = assignment["data"]["subject_type"]
+
+            if subject_type == SubjectType.RADICAL:
+                subject = Radical(
+                    id=subject_id,
+                    document_url=faker.url(),
+                    characters=faker.pystr(),
+                    meanings=[],
+                )
+                DB.radical[subject_id] = subject
+            elif subject_type == SubjectType.KANJI:
+                subject = Kanji(
+                    id=subject_id,
+                    document_url=faker.url(),
+                    characters=faker.pystr(),
+                    meanings=[],
+                    readings=[],
+                )
+                DB.kanji[subject_id] = subject
+            else:
+                assert subject_type == SubjectType.VOCABULARY
+                subject = Vocabulary(
+                    id=subject_id,
+                    document_url=faker.url(),
+                    characters=faker.pystr(),
+                    meanings=[],
+                    readings=[],
+                )
+                DB.vocabulary[subject_id] = subject
+
+            expected_assignments.append(
+                Assignment(
+                    subject=subject,
+                    srs_stage=assignment["data"]["srs_stage"],
+                    available_at=ciso8601.parse_datetime(
+                        assignment["data"]["available_at"],
+                    ),
+                ),
+            )
 
         httpx_mock.add_response(
             url=URL(
@@ -35,15 +95,15 @@ class TestWaniKaniAPIClient:
             ),
             headers=client.client.headers,
             json={
-                "data": expected_assignments,
+                "data": assignments,
             },
         )
 
-        resp = await client.assignments()
+        resp = [a async for a in client.assignments()]
         assert resp == expected_assignments
 
     async def test_radicals(self, client, httpx_mock, faker):
-        expected_radicals = [
+        radicals = [
             {
                 "id": faker.random_int(),
                 "object": "radical",
@@ -62,6 +122,19 @@ class TestWaniKaniAPIClient:
             }
             for _ in range(faker.random_int(min=1, max=10))
         ]
+        expected_radicals = [
+            Radical(
+                id=r["id"],
+                document_url=r["data"]["document_url"],
+                characters=r["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in r["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+            )
+            for r in radicals
+        ]
 
         httpx_mock.add_response(
             url=URL(
@@ -73,15 +146,15 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": None,
                 },
-                "data": expected_radicals,
+                "data": radicals,
             },
         )
 
-        resp = [r async for r in await client.radicals()]
+        resp = [r async for r in client.radicals()]
         assert resp == expected_radicals
 
     async def test_kanji(self, client, httpx_mock, faker):
-        expected_kanji = [
+        kanji = [
             {
                 "id": faker.random_int(),
                 "object": "kanji",
@@ -109,6 +182,24 @@ class TestWaniKaniAPIClient:
             }
             for _ in range(faker.random_int(min=3, max=10))
         ]
+        expected_kanji = [
+            Kanji(
+                id=k["id"],
+                document_url=k["data"]["document_url"],
+                characters=k["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in k["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+                readings=[
+                    reading["reading"]
+                    for reading in k["data"]["readings"]
+                    if reading["accepted_answer"]
+                ],
+            )
+            for k in kanji
+        ]
 
         httpx_mock.add_response(
             url=URL(
@@ -120,7 +211,7 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=12345",  # noqa: E501
                 },
-                "data": [expected_kanji[0]],
+                "data": [kanji[0]],
             },
         )
         httpx_mock.add_response(
@@ -133,15 +224,15 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": None,
                 },
-                "data": expected_kanji[1:],
+                "data": kanji[1:],
             },
         )
 
-        resp = [k async for k in await client.kanji()]
+        resp = [k async for k in client.kanji()]
         assert resp == expected_kanji
 
     async def test_vocabulary(self, client, httpx_mock, faker):
-        expected_vocabulary = [
+        vocabulary = [
             {
                 "id": faker.random_int(),
                 "object": "vocabulary",
@@ -169,6 +260,24 @@ class TestWaniKaniAPIClient:
             }
             for _ in range(faker.random_int(min=3, max=10))
         ]
+        expected_vocabulary = [
+            Vocabulary(
+                id=v["id"],
+                document_url=v["data"]["document_url"],
+                characters=v["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in v["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+                readings=[
+                    reading["reading"]
+                    for reading in v["data"]["readings"]
+                    if reading["accepted_answer"]
+                ],
+            )
+            for v in vocabulary
+        ]
 
         httpx_mock.add_response(
             url=URL(
@@ -180,7 +289,7 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=987",  # noqa: E501
                 },
-                "data": [expected_vocabulary[0]],
+                "data": [vocabulary[0]],
             },
         )
         httpx_mock.add_response(
@@ -197,7 +306,7 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=1234",  # noqa: E501
                 },
-                "data": [expected_vocabulary[1]],
+                "data": [vocabulary[1]],
             },
         )
         httpx_mock.add_response(
@@ -214,9 +323,9 @@ class TestWaniKaniAPIClient:
                 "pages": {
                     "next_url": None,
                 },
-                "data": expected_vocabulary[2:],
+                "data": vocabulary[2:],
             },
         )
 
-        resp = [v async for v in await client.vocabulary()]
+        resp = [v async for v in client.vocabulary()]
         assert resp == expected_vocabulary

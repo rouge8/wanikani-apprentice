@@ -14,6 +14,8 @@ certifi==2021.10.8
     # via httpx
 charset-normalizer==2.0.7
     # via httpx
+ciso8601==2.2.0
+    # via wanikani-apprentice
 h11==0.12.0
     # via httpcore
 httpcore==0.13.7

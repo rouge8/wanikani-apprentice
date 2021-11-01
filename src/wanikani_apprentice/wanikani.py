@@ -3,7 +3,14 @@ import enum
 import typing
 
 import attr
+import ciso8601
 import httpx
+
+from .db import DB
+from .models import Assignment
+from .models import Kanji
+from .models import Radical
+from .models import Vocabulary
 
 APPRENTICE_SRS_STAGES = [1, 2, 3, 4]
 
@@ -29,7 +36,7 @@ class WaniKaniAPIClient:
             },
         )
 
-    async def assignments(self) -> list[dict[str, typing.Any]]:
+    async def assignments(self) -> AsyncIterable[Assignment]:
         """Get all Apprentice assignments"""
         # TODO: Handle possible (but unlikely) pagination
         resp = await self.client.get(
@@ -39,7 +46,26 @@ class WaniKaniAPIClient:
                 "hidden": "false",
             },
         )
-        return resp.json()["data"]  # type: ignore[no-any-return]
+        for assignment in resp.json()["data"]:
+            subject_id = assignment["data"]["subject_id"]
+            subject_type = assignment["data"]["subject_type"]
+
+            if subject_type == SubjectType.RADICAL:
+                subject = DB.radical[subject_id]
+            elif subject_type == SubjectType.KANJI:
+                subject = DB.kanji[subject_id]  # type: ignore[assignment]
+            elif subject_type == SubjectType.VOCABULARY:
+                subject = DB.vocabulary[subject_id]  # type: ignore[assignment]
+            else:
+                raise NotImplementedError
+
+            yield Assignment(
+                subject=subject,
+                srs_stage=assignment["data"]["srs_stage"],
+                available_at=ciso8601.parse_datetime(
+                    assignment["data"]["available_at"],
+                ),
+            )
 
     async def _subjects(
         self,
@@ -59,14 +85,54 @@ class WaniKaniAPIClient:
             for subject in resp["data"]:
                 yield subject
 
-    async def radicals(self) -> AsyncIterable[dict[str, typing.Any]]:
+    async def radicals(self) -> AsyncIterable[Radical]:
         """Get all radicals"""
-        return self._subjects(SubjectType.RADICAL)
+        async for radical in self._subjects(SubjectType.RADICAL):
+            yield Radical(
+                id=radical["id"],
+                document_url=radical["data"]["document_url"],
+                characters=radical["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in radical["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+            )
 
-    async def kanji(self) -> AsyncIterable[dict[str, typing.Any]]:
+    async def kanji(self) -> AsyncIterable[Kanji]:
         """Get all kanji"""
-        return self._subjects(SubjectType.KANJI)
+        async for kanji in self._subjects(SubjectType.KANJI):
+            yield Kanji(
+                id=kanji["id"],
+                document_url=kanji["data"]["document_url"],
+                characters=kanji["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in kanji["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+                readings=[
+                    reading["reading"]
+                    for reading in kanji["data"]["readings"]
+                    if reading["accepted_answer"]
+                ],
+            )
 
-    async def vocabulary(self) -> AsyncIterable[dict[str, typing.Any]]:
+    async def vocabulary(self) -> AsyncIterable[Vocabulary]:
         """Get all vocabulary"""
-        return self._subjects(SubjectType.VOCABULARY)
+        async for vocab in self._subjects(SubjectType.VOCABULARY):
+            yield Vocabulary(
+                id=vocab["id"],
+                document_url=vocab["data"]["document_url"],
+                characters=vocab["data"]["characters"],
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in vocab["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+                readings=[
+                    reading["reading"]
+                    for reading in vocab["data"]["readings"]
+                    if reading["accepted_answer"]
+                ],
+            )

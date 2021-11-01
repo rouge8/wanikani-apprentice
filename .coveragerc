@@ -3,3 +3,8 @@ branch = True
 source =
     wanikani_apprentice
     tests
+
+[report]
+exclude_lines =
+    raise NotImplementedError
+    if typing.TYPE_CHECKING:
