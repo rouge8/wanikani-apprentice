@@ -6,15 +6,28 @@
 #
 -e .
     # via -r requirements.in
+anyio==3.3.4
+    # via httpcore
 attrs==21.2.0
     # via wanikani-apprentice
 certifi==2021.10.8
-    # via requests
+    # via httpx
 charset-normalizer==2.0.7
-    # via requests
-idna==3.3
-    # via requests
-requests==2.26.0
+    # via httpx
+h11==0.12.0
+    # via httpcore
+httpcore==0.13.7
+    # via httpx
+httpx==0.20.0
     # via wanikani-apprentice
-urllib3==1.26.7
-    # via requests
+idna==3.3
+    # via
+    #   anyio
+    #   rfc3986
+rfc3986[idna2008]==1.5.0
+    # via httpx
+sniffio==1.2.0
+    # via
+    #   anyio
+    #   httpcore
+    #   httpx
