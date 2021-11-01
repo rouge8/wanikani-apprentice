@@ -31,6 +31,8 @@ class WaniKaniAPIClient:
     def __attrs_post_init__(self) -> None:
         self.client.headers.update(
             {
+                # TODO: Move Authorization out of here so that the HTTPX client
+                # can be shared between APIClients
                 "Authorization": f"Bearer {self.api_key}",
                 "Wanikani-Revision": "20170710",
             },
