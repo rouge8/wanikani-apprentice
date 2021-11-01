@@ -7,8 +7,10 @@ from wanikani_apprentice.wanikani import WaniKaniAPIClient
 @pytest.mark.asyncio
 class TestWaniKaniAPIClient:
     @pytest.fixture
-    def client(self):
-        return WaniKaniAPIClient("fake-key")
+    async def client(self):
+        client = WaniKaniAPIClient("fake-key")
+        yield client
+        await client.client.aclose()
 
     async def test_assignments(self, client, httpx_mock, faker):
         expected_assignments = [
