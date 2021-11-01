@@ -7,7 +7,9 @@
 -e .
     # via -r requirements.in
 anyio==3.3.4
-    # via httpcore
+    # via
+    #   httpcore
+    #   starlette
 attrs==21.2.0
     # via wanikani-apprentice
 certifi==2021.10.8
@@ -33,3 +35,5 @@ sniffio==1.2.0
     #   anyio
     #   httpcore
     #   httpx
+starlette==0.16.0
+    # via wanikani-apprentice
