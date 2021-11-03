@@ -2,6 +2,11 @@ import pytest
 
 
 @pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture
 async def client():
     """A WaniKaniAPIClient"""
     from wanikani_apprentice.wanikani import WaniKaniAPIClient

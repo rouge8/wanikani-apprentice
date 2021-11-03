@@ -1,6 +1,6 @@
-import asyncio
 import typing
 
+import anyio
 import attr
 import structlog
 
@@ -26,13 +26,10 @@ DB = Database()
 
 
 async def populate_db(api: "WaniKaniAPIClient") -> None:
-    radicals = asyncio.create_task(_populate_radicals(api))
-    kanji = asyncio.create_task(_populate_kanji(api))
-    vocabulary = asyncio.create_task(_populate_vocabulary(api))
-
-    await vocabulary
-    await kanji
-    await radicals
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(_populate_radicals, api)
+        tg.start_soon(_populate_kanji, api)
+        tg.start_soon(_populate_vocabulary, api)
 
 
 async def _populate_radicals(api: "WaniKaniAPIClient") -> None:

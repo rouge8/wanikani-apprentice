@@ -8,7 +8,7 @@ from wanikani_apprentice.models import Radical
 from wanikani_apprentice.models import Vocabulary
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_populate_db(faker):
     radicals = [
         Radical(

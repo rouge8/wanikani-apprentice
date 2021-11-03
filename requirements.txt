@@ -10,6 +10,7 @@ anyio==3.3.4
     # via
     #   httpcore
     #   starlette
+    #   wanikani-apprentice
 attrs==21.2.0
     # via wanikani-apprentice
 certifi==2021.10.8

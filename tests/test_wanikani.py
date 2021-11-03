@@ -10,7 +10,7 @@ from wanikani_apprentice.models import Vocabulary
 from wanikani_apprentice.wanikani import SubjectType
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWaniKaniAPIClient:
     @pytest.fixture
     def headers(self, client):
