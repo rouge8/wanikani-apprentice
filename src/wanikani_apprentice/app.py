@@ -13,6 +13,9 @@ from starlette.templating import Jinja2Templates
 from . import config
 from .constants import SESSION_API_KEY
 from .db import populate_db
+from .models import Kanji
+from .models import Radical
+from .models import Vocabulary
 from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
@@ -30,7 +33,8 @@ async def login(request: Request) -> _TemplateResponse | RedirectResponse:
             return templates.TemplateResponse("login.html.j2", {"request": request})
     elif request.method == "POST":
         form = await request.form()
-        request.session[SESSION_API_KEY] = form["api_key"]
+        # TODO: Get /user to validate the API key
+        request.session[SESSION_API_KEY] = form["api_key"].strip()
         return RedirectResponse(request.url_for("assignments"), status_code=303)
     else:
         raise NotImplementedError
@@ -42,7 +46,30 @@ async def logout(request: Request) -> RedirectResponse:
 
 
 async def assignments(request: Request) -> _TemplateResponse:
-    return templates.TemplateResponse("assignments.html.j2", {"request": request})
+    radicals = []
+    kanji = []
+    vocabulary = []
+
+    api = WaniKaniAPIClient(request.session[SESSION_API_KEY])
+    async for assignment in api.assignments():
+        if isinstance(assignment.subject, Radical):
+            radicals.append(assignment)
+        elif isinstance(assignment.subject, Kanji):
+            kanji.append(assignment)
+        elif isinstance(assignment.subject, Vocabulary):
+            vocabulary.append(assignment)
+        else:
+            raise NotImplementedError
+
+    return templates.TemplateResponse(
+        "assignments.html.j2",
+        {
+            "request": request,
+            "radicals": radicals,
+            "kanji": kanji,
+            "vocabulary": vocabulary,
+        },
+    )
 
 
 def create_app() -> Starlette:
