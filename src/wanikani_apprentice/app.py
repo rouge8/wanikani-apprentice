@@ -1,5 +1,4 @@
 from functools import partial
-import os.path
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -8,7 +7,6 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from starlette.routing import Route
 from starlette.templating import _TemplateResponse
-from starlette.templating import Jinja2Templates
 
 from . import config
 from .constants import SESSION_API_KEY
@@ -16,13 +14,10 @@ from .db import populate_db
 from .models import Kanji
 from .models import Radical
 from .models import Vocabulary
+from .resources import httpx_client
+from .resources import templates
 from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
-
-HERE = os.path.dirname(__file__)
-
-templates = Jinja2Templates(directory=os.path.join(HERE, "templates"))
-templates.env.filters["is_logged_in"] = is_logged_in
 
 
 async def login(request: Request) -> _TemplateResponse | RedirectResponse:
@@ -50,8 +45,7 @@ async def assignments(request: Request) -> _TemplateResponse:
     kanji = []
     vocabulary = []
 
-    # TODO: Use a global httpx.AsyncClient()
-    api = WaniKaniAPIClient(request.session[SESSION_API_KEY])
+    api = WaniKaniAPIClient(request.session[SESSION_API_KEY], client=httpx_client)
     async for assignment in api.assignments():
         if isinstance(assignment.subject, Radical):
             radicals.append(assignment)
@@ -74,15 +68,20 @@ async def assignments(request: Request) -> _TemplateResponse:
 
 
 def create_app() -> Starlette:
-    # TODO: Use a global httpx.AsyncClient()
-    api = WaniKaniAPIClient(config.WANIKANI_API_KEY)
+    api = WaniKaniAPIClient(config.WANIKANI_API_KEY, client=httpx_client)
 
     _populate_db = partial(populate_db, api)
+
+    async def shutdown_client() -> None:
+        await httpx_client.aclose()
 
     return Starlette(
         debug=config.DEBUG,
         on_startup=[
             _populate_db,
+        ],
+        on_shutdown=[
+            shutdown_client,
         ],
         routes=[
             Route("/login", login, methods=["GET", "POST"]),
