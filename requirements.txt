@@ -29,6 +29,10 @@ idna==3.3
     # via
     #   anyio
     #   rfc3986
+jinja2==3.0.2
+    # via wanikani-apprentice
+markupsafe==2.0.1
+    # via jinja2
 rfc3986[idna2008]==1.5.0
     # via httpx
 sniffio==1.2.0
