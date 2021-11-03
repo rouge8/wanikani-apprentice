@@ -50,6 +50,7 @@ async def assignments(request: Request) -> _TemplateResponse:
     kanji = []
     vocabulary = []
 
+    # TODO: Use a global httpx.AsyncClient()
     api = WaniKaniAPIClient(request.session[SESSION_API_KEY])
     async for assignment in api.assignments():
         if isinstance(assignment.subject, Radical):
