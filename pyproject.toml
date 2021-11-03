@@ -14,7 +14,9 @@ dependencies = [
   "attrs",
   "ciso8601",
   "httpx",
+  "itsdangerous",
   "jinja2",
+  "python-multipart",
   "starlette",
   "structlog",
 ]

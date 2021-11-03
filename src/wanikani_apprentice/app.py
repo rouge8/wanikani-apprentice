@@ -1,29 +1,47 @@
 from functools import partial
 import os.path
-import typing
 
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
 from starlette.routing import Route
+from starlette.templating import _TemplateResponse
 from starlette.templating import Jinja2Templates
 
-if typing.TYPE_CHECKING:
-    from starlette.requests import Request
-    from starlette.templating import _TemplateResponse
-
 from . import config
+from .constants import SESSION_API_KEY
 from .db import populate_db
+from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
 HERE = os.path.dirname(__file__)
 
 templates = Jinja2Templates(directory=os.path.join(HERE, "templates"))
+templates.env.filters["is_logged_in"] = is_logged_in
 
 
-async def login(request: "Request") -> "_TemplateResponse":
-    return templates.TemplateResponse("login.html.j2", {"request": request})
+async def login(request: Request) -> _TemplateResponse | RedirectResponse:
+    if request.method == "GET":
+        if is_logged_in(request):
+            return RedirectResponse(request.url_for("assignments"))
+        else:
+            return templates.TemplateResponse("login.html.j2", {"request": request})
+    elif request.method == "POST":
+        form = await request.form()
+        request.session[SESSION_API_KEY] = form["api_key"]
+        return RedirectResponse(request.url_for("assignments"), status_code=303)
+    else:
+        raise NotImplementedError
 
 
-async def assignments(request: "Request") -> "_TemplateResponse":
+async def logout(request: Request) -> RedirectResponse:
+    request.session.clear()
+    return RedirectResponse(request.url_for("login"))
+
+
+async def assignments(request: Request) -> _TemplateResponse:
     return templates.TemplateResponse("assignments.html.j2", {"request": request})
 
 
@@ -34,13 +52,18 @@ def create_app() -> Starlette:
     _populate_db = partial(populate_db, api)
 
     return Starlette(
-        # TODO: Remove
-        debug=True,
+        debug=config.DEBUG,
         on_startup=[
             _populate_db,
         ],
         routes=[
-            Route("/login", login),
+            Route("/login", login, methods=["GET", "POST"]),
+            Route("/logout", logout),
             Route("/assignments", assignments),
+        ],
+        middleware=[
+            # TODO: HTTPSRedirectMiddleware
+            # TODO: TrustedHostMiddleware
+            Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET),
         ],
     )

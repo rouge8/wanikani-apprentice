@@ -29,12 +29,18 @@ idna==3.3
     # via
     #   anyio
     #   rfc3986
+itsdangerous==2.0.1
+    # via wanikani-apprentice
 jinja2==3.0.2
     # via wanikani-apprentice
 markupsafe==2.0.1
     # via jinja2
+python-multipart==0.0.5
+    # via wanikani-apprentice
 rfc3986[idna2008]==1.5.0
     # via httpx
+six==1.16.0
+    # via python-multipart
 sniffio==1.2.0
     # via
     #   anyio
