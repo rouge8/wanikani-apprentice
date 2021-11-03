@@ -1,9 +1,48 @@
 {% extends "layout.html.j2" %}
-{% block title %}Assignments{% endblock %}
+{% block title %}Apprentice Assignments{% endblock %}
 {% block body %}
 <div class="container">
   <div class="row">
-    <h1>Assignments</h1>
+    <h1>Apprentice Assignments</h1>
   </div>
+
+  <div class="row">
+    <h2>Radicals</h2>
+  </div>
+  <div class="row">
+    {% for radical in radicals %}
+    <div class="card col-3">
+      <p class="text-jp">{{ radical.subject.characters }}</p>
+      <p>{{ radical.subject.meanings | join(", ")}}</p>
+    {% endfor %}
+    </div>
+  </div>
+
+  <div class="row">
+    <h2>Kanji</h2>
+  </div>
+  <div class="row">
+    {% for k in kanji %}
+    <div class="card col-3">
+      <p class="text-jp">{{ k.subject.characters }}</p>
+      <p class="text-jp">{{ k.subject.readings | join(", ")}}</p>
+      <p>{{ k.subject.meanings | join(", ")}}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row">
+    <h2>Vocabulary</h2>
+  </div>
+  <div class="row">
+    {% for v in vocabulary %}
+    <div class="card col-3">
+      <p class="text-jp">{{ v.subject.characters }}</p>
+      <p class="text-jp">{{ v.subject.readings | join(", ") }}</p>
+      <p>{{ v.subject.meanings | join(", ")}}</p>
+    </div>
+    {% endfor %}
+  </div>
+
 </div>
 {% endblock %}
