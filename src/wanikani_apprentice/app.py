@@ -2,7 +2,6 @@ from functools import partial
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -76,13 +75,6 @@ def create_app() -> Starlette:
     async def shutdown_client() -> None:
         await httpx_client.aclose()
 
-    middleware = [
-        Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET),
-    ]
-
-    if config.HTTPS_ONLY:
-        middleware.append(Middleware(HTTPSRedirectMiddleware))
-
     return Starlette(
         debug=config.DEBUG,
         on_startup=[
@@ -96,5 +88,9 @@ def create_app() -> Starlette:
             Route("/logout", logout),
             Route("/assignments", assignments),
         ],
-        middleware=middleware,
+        middleware=[
+            # TODO: HTTPSRedirectMiddleware
+            # TODO: TrustedHostMiddleware
+            Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET),
+        ],
     )
