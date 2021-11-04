@@ -10,6 +10,7 @@ processes = []
   DEBUG = "false"
   WEB_CONCURRENCY = "2"
   SENTRY_ENABLED = "true"
+  SENTRY_ENVIRONMENT = "prod"
   HTTPS_ONLY = "true"
 
 [experimental]
