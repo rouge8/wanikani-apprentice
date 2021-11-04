@@ -11,6 +11,8 @@ anyio==3.3.4
     #   httpcore
     #   starlette
     #   wanikani-apprentice
+asgiref==3.4.1
+    # via uvicorn
 attrs==21.2.0
     # via wanikani-apprentice
 certifi==2021.10.8
@@ -19,8 +21,14 @@ charset-normalizer==2.0.7
     # via httpx
 ciso8601==2.2.0
     # via wanikani-apprentice
+click==8.0.3
+    # via uvicorn
+gunicorn==20.1.0
+    # via wanikani-apprentice
 h11==0.12.0
-    # via httpcore
+    # via
+    #   httpcore
+    #   uvicorn
 httpcore==0.13.7
     # via httpx
 httpx==0.20.0
@@ -50,3 +58,8 @@ starlette==0.16.0
     # via wanikani-apprentice
 structlog==21.2.0
     # via wanikani-apprentice
+uvicorn==0.15.0
+    # via wanikani-apprentice
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

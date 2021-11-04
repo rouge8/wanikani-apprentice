@@ -13,12 +13,14 @@ dependencies = [
   "anyio",
   "attrs",
   "ciso8601",
+  "gunicorn",
   "httpx",
   "itsdangerous",
   "jinja2",
   "python-multipart",
   "starlette",
   "structlog",
+  "uvicorn",
 ]
 
 [project.urls]

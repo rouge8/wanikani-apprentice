@@ -1,0 +1,12 @@
+# Python
+*.pyc
+__pycache__
+
+# Config
+.env
+
+# Tests
+htmlcov
+.cov
+.tox
+.mypy_cache
