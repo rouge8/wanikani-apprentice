@@ -1,7 +1,7 @@
 FROM python:3.10 AS build
 RUN mkdir -p /app/src/wanikani_apprentice/
 WORKDIR /app
-COPY pyproject.toml requirements.txt /app
+COPY pyproject.toml requirements.txt /app/
 COPY src/wanikani_apprentice/__init__.py /app/src/wanikani_apprentice/
 RUN pip install -U 'pip==21.3.*' \
     && pip wheel -r requirements.txt \
@@ -10,7 +10,7 @@ RUN pip install -U 'pip==21.3.*' \
 FROM python:3.10-slim
 RUN mkdir -p /app
 WORKDIR /whl
-COPY --from=build /app/*.whl .
+COPY --from=build /app/*.whl /whl/
 RUN pip install -U 'pip==21.3.*' \
     && pip install *.whl \
     && rm -rf ~/.cache/pip
