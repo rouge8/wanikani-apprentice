@@ -12,6 +12,7 @@ processes = []
   SENTRY_ENABLED = "true"
   SENTRY_ENVIRONMENT = "prod"
   HTTPS_ONLY = "true"
+  TRUSTED_HOSTS = "wk-apprentice.rouge8.com"
 
 [experimental]
   allowed_public_ports = []

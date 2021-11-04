@@ -7,6 +7,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from starlette.routing import Route
@@ -121,9 +122,12 @@ def create_app() -> Starlette:
     async def shutdown_client() -> None:
         await httpx_client.aclose()
 
-    middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET))
+    middleware.append(
+        Middleware(TrustedHostMiddleware, allowed_hosts=config.TRUSTED_HOSTS),
+    )
     if config.HTTPS_ONLY:
         middleware.append(Middleware(HTTPSRedirectMiddleware))
+    middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET))
 
     return Starlette(
         debug=config.DEBUG,
