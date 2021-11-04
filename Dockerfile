@@ -20,4 +20,4 @@ RUN pip install -U 'pip==21.3.*' \
 WORKDIR /app
 COPY . /app
 RUN pip install --no-deps -e .
-CMD ["uvicorn", "--factory", "wanikani_apprentice.app:create_app", "--proxy-headers", "--forwarded-allow-ips", "*", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "--factory", "wanikani_apprentice.app:create_app", "--proxy-headers", "--forwarded-allow-ips", "*", "--host", "0.0.0.0", "--port", "8080", "--loop", "uvloop", "--http", "httptools"]
