@@ -5,6 +5,7 @@ import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -116,6 +117,8 @@ def create_app() -> Starlette:
         await httpx_client.aclose()
 
     middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET))
+    if config.HTTPS_ONLY:
+        middleware.append(Middleware(HTTPSRedirectMiddleware))
 
     return Starlette(
         debug=config.DEBUG,

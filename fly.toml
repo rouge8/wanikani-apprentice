@@ -10,6 +10,7 @@ processes = []
   DEBUG = "false"
   WEB_CONCURRENCY = "2"
   SENTRY_ENABLED = "true"
+  HTTPS_ONLY = "true"
 
 [experimental]
   allowed_public_ports = []
