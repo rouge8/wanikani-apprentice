@@ -2,12 +2,15 @@ import ciso8601
 from httpx import URL
 import pytest
 
-from wanikani_apprentice.db import DB
 from wanikani_apprentice.models import Assignment
 from wanikani_apprentice.models import Kanji
 from wanikani_apprentice.models import Radical
 from wanikani_apprentice.models import Vocabulary
 from wanikani_apprentice.wanikani import SubjectType
+
+from .factories import KanjiFactory
+from .factories import RadicalFactory
+from .factories import VocabularyFactory
 
 
 @pytest.mark.anyio
@@ -57,32 +60,12 @@ class TestWaniKaniAPIClient:
             subject_type = assignment["data"]["subject_type"]
 
             if subject_type == SubjectType.RADICAL:
-                subject = Radical(
-                    id=subject_id,
-                    document_url=faker.url(),
-                    characters=faker.pystr(),
-                    meanings=[],
-                )
-                DB.radical[subject_id] = subject
+                subject = RadicalFactory.create(id=subject_id)
             elif subject_type == SubjectType.KANJI:
-                subject = Kanji(
-                    id=subject_id,
-                    document_url=faker.url(),
-                    characters=faker.pystr(),
-                    meanings=[],
-                    readings=[],
-                )
-                DB.kanji[subject_id] = subject
+                subject = KanjiFactory.create(id=subject_id)
             else:
                 assert subject_type == SubjectType.VOCABULARY
-                subject = Vocabulary(
-                    id=subject_id,
-                    document_url=faker.url(),
-                    characters=faker.pystr(),
-                    meanings=[],
-                    readings=[],
-                )
-                DB.vocabulary[subject_id] = subject
+                subject = VocabularyFactory.create(id=subject_id)
 
             expected_assignments.append(
                 Assignment(

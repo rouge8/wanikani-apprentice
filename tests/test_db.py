@@ -3,42 +3,17 @@ import pytest
 from wanikani_apprentice.db import Database
 from wanikani_apprentice.db import DB
 from wanikani_apprentice.db import populate_db
-from wanikani_apprentice.models import Kanji
-from wanikani_apprentice.models import Radical
-from wanikani_apprentice.models import Vocabulary
+
+from .factories import KanjiFactory
+from .factories import RadicalFactory
+from .factories import VocabularyFactory
 
 
 @pytest.mark.anyio
 async def test_populate_db(faker):
-    radicals = [
-        Radical(
-            id=faker.random_int(),
-            document_url=faker.url(),
-            characters=faker.pystr(),
-            meanings=[],
-        )
-        for _ in range(faker.random_int(min=1, max=10))
-    ]
-    kanji = [
-        Kanji(
-            id=faker.random_int(),
-            document_url=faker.url(),
-            characters=faker.pystr(),
-            meanings=[],
-            readings=[],
-        )
-        for _ in range(faker.random_int(min=1, max=10))
-    ]
-    vocabulary = [
-        Vocabulary(
-            id=faker.random_int(),
-            document_url=faker.url(),
-            characters=faker.pystr(),
-            meanings=[],
-            readings=[],
-        )
-        for _ in range(faker.random_int(min=1, max=10))
-    ]
+    radicals = RadicalFactory.build_batch(faker.random_int(min=1, max=10))
+    kanji = KanjiFactory.build_batch(faker.random_int(min=1, max=10))
+    vocabulary = VocabularyFactory.build_batch(faker.random_int(min=1, max=10))
 
     class FakeAPI:
         async def radicals(self):
