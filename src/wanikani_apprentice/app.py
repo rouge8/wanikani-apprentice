@@ -23,6 +23,13 @@ from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
 
+async def index(request: Request) -> RedirectResponse:
+    if is_logged_in(request):
+        return RedirectResponse(request.url_for("assignments"))
+    else:
+        return RedirectResponse(request.url_for("login"))
+
+
 async def login(request: Request) -> _TemplateResponse | RedirectResponse:
     if request.method == "GET":
         if is_logged_in(request):
@@ -119,6 +126,7 @@ def create_app() -> Starlette:
             shutdown_client,
         ],
         routes=[
+            Route("/", index),
             Route("/login", login, methods=["GET", "POST"]),
             Route("/logout", logout),
             Route("/assignments", assignments),
