@@ -97,6 +97,10 @@ async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
     )
 
 
+async def test_500(request: Request) -> None:
+    1 / 0
+
+
 def create_app() -> Starlette:
     if config.SENTRY_ENABLED:
         sentry_sdk.init(
@@ -134,6 +138,7 @@ def create_app() -> Starlette:
             Route("/login", login, methods=["GET", "POST"]),
             Route("/logout", logout),
             Route("/assignments", assignments),
+            Route("/test-500", test_500),
         ],
         middleware=middleware,
     )
