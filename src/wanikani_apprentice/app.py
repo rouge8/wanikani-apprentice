@@ -59,7 +59,10 @@ async def logout(request: Request) -> RedirectResponse:
     return RedirectResponse(request.url_for("login"))
 
 
-async def assignments(request: Request) -> _TemplateResponse:
+async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
+    if not is_logged_in(request):
+        return RedirectResponse(request.url_for("login"))
+
     radicals = []
     kanji = []
     vocabulary = []
