@@ -8,6 +8,9 @@ RUN pip install -U 'pip==21.3.*' \
     && rm -rf ~/.cache/pip
 
 FROM python:3.10-slim
+RUN apt-get update \
+    && apt-get install -y git \
+    && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app
 WORKDIR /whl
 COPY --from=build /app/*.whl /whl/

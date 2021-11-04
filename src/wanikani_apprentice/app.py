@@ -102,6 +102,7 @@ def create_app() -> Starlette:
         sentry_sdk.init(
             "https://64dfba28156a490999df043f193cfcd3@o1059726.ingest.sentry.io/6048576",  # noqa: E501
             send_default_pii=True,
+            release=config.git_revision(),
         )
         middleware = [
             Middleware(SentryAsgiMiddleware),
