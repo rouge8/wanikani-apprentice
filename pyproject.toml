@@ -18,6 +18,7 @@ dependencies = [
   "itsdangerous",
   "jinja2",
   "python-multipart",
+  "sentry-sdk",
   "starlette",
   "structlog",
   "uvicorn",

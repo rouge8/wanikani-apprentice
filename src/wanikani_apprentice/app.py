@@ -1,5 +1,7 @@
 from functools import partial
 
+import sentry_sdk
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -68,12 +70,25 @@ async def assignments(request: Request) -> _TemplateResponse:
 
 
 def create_app() -> Starlette:
+    if config.SENTRY_ENABLED:
+        sentry_sdk.init(
+            "https://64dfba28156a490999df043f193cfcd3@o1059726.ingest.sentry.io/6048576",  # noqa: E501
+            send_default_pii=True,
+        )
+        middleware = [
+            Middleware(SentryAsgiMiddleware),
+        ]
+    else:
+        middleware = []
+
     api = WaniKaniAPIClient(config.WANIKANI_API_KEY, client=httpx_client)
 
     _populate_db = partial(populate_db, api)
 
     async def shutdown_client() -> None:
         await httpx_client.aclose()
+
+    middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET))
 
     return Starlette(
         debug=config.DEBUG,
@@ -88,9 +103,5 @@ def create_app() -> Starlette:
             Route("/logout", logout),
             Route("/assignments", assignments),
         ],
-        middleware=[
-            # TODO: HTTPSRedirectMiddleware
-            # TODO: TrustedHostMiddleware
-            Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET),
-        ],
+        middleware=middleware,
     )
