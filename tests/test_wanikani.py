@@ -335,3 +335,18 @@ class TestWaniKaniAPIClient:
 
         resp = [v async for v in client.vocabulary()]
         assert resp == expected_vocabulary
+
+    async def test_username(self, headers, client, httpx_mock, faker):
+        resp = {
+            "data": {
+                "username": faker.simple_profile()["username"],
+            },
+        }
+
+        httpx_mock.add_response(
+            url=URL(f"{client.BASE_URL}/user"),
+            headers=headers,
+            json=resp,
+        )
+
+        assert await client.username() == resp["data"]["username"]

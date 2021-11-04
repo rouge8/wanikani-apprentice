@@ -1,5 +1,6 @@
 from functools import partial
 
+import httpx
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from starlette.applications import Starlette
@@ -27,11 +28,27 @@ async def login(request: Request) -> _TemplateResponse | RedirectResponse:
         if is_logged_in(request):
             return RedirectResponse(request.url_for("assignments"))
         else:
-            return templates.TemplateResponse("login.html.j2", {"request": request})
+            return templates.TemplateResponse(
+                "login.html.j2",
+                {"request": request, "invalid_api_key": False},
+            )
     elif request.method == "POST":
         form = await request.form()
-        # TODO: Get /user to validate the API key
-        request.session[SESSION_API_KEY] = form["api_key"].strip()
+        api_key = form["api_key"].strip()
+        api = WaniKaniAPIClient(api_key, client=httpx_client)
+
+        try:
+            await api.username()
+        except httpx.HTTPStatusError as err:
+            if err.response.status_code == 401:
+                return templates.TemplateResponse(
+                    "login.html.j2",
+                    {"request": request, "invalid_api_key": True},
+                )
+            else:
+                raise err
+
+        request.session[SESSION_API_KEY] = api_key
         return RedirectResponse(request.url_for("assignments"), status_code=303)
     else:
         raise NotImplementedError

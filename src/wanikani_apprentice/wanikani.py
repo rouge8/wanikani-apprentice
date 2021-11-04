@@ -35,7 +35,11 @@ class WaniKaniAPIClient:
     def __attrs_post_init__(self) -> None:
         self.client.headers.update({"Wanikani-Revision": "20170710"})
 
-    async def _request(self, path: str, params: dict[str, str]) -> httpx.Response:
+    async def _request(
+        self,
+        path: str,
+        params: dict[str, str] | None = None,
+    ) -> httpx.Response:
         log.info("requesting", path=path, params=params)
         start = time.time()
         resp = await self.client.get(
@@ -51,6 +55,7 @@ class WaniKaniAPIClient:
             status_code=resp.status_code,
             duration=end - start,
         )
+        resp.raise_for_status()
         return resp
 
     async def assignments(self) -> AsyncIterable[Assignment]:
@@ -155,3 +160,8 @@ class WaniKaniAPIClient:
                     if reading["accepted_answer"]
                 ],
             )
+
+    async def username(self) -> str:
+        resp = await self._request("user")
+        username: str = resp.json()["data"]["username"]
+        return username
