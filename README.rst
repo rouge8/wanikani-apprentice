@@ -1,6 +1,13 @@
 wanikani-apprentice
 ===================
 
+Deploying
+---------
+
+.. code-block:: sh
+
+   flyctl deploy
+
 Keeping up to date with template changes
 ----------------------------------------
 
