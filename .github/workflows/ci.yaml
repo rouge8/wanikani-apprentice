@@ -80,3 +80,11 @@ jobs:
       - uses: superfly/flyctl-actions@1.1
         with:
           args: deploy
+      - name: Sentry Release
+        uses: getsentry/action-release@v1.1.6
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: rouge8
+          SENTRY_PROJECT: wanikani-apprentice
+        with:
+          environment: prod
