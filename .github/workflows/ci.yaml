@@ -79,6 +79,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: superfly/flyctl-actions@1.1
+        env:
+          DOCKER_BUILDKIT: 1
         with:
           args: deploy
       - name: Sentry Release
