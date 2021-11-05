@@ -10,6 +10,7 @@ processes = []
   DEBUG = "false"
   WEB_CONCURRENCY = "2"
   SENTRY_ENABLED = "true"
+  SENTRY_DSN = "https://64dfba28156a490999df043f193cfcd3@o1059726.ingest.sentry.io/6048576"
   SENTRY_ENVIRONMENT = "prod"
   HTTPS_ONLY = "true"
   TRUSTED_HOSTS = "wk-apprentice.rouge8.com"
