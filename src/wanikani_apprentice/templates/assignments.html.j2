@@ -12,7 +12,11 @@
   <div class="row">
     {% for radical in radicals %}
     <div class="card col-3">
-      <p class="text-jp">{{ radical.subject.characters }}</p>
+      <p class="text-jp">
+        <a href="{{ radical.subject.document_url }}">
+          {{ radical.subject.characters }}
+        </a>
+      </p>
       <p>{{ radical.subject.meanings | join(", ")}}</p>
     </div>
     {% endfor %}
@@ -24,7 +28,11 @@
   <div class="row">
     {% for k in kanji %}
     <div class="card col-3">
-      <p class="text-jp">{{ k.subject.characters }}</p>
+      <p class="text-jp">
+        <a href="{{ k.subject.document_url }}">
+          {{ k.subject.characters }}
+        </a>
+      </p>
       <p class="text-jp">{{ k.subject.readings | join(", ")}}</p>
       <p>{{ k.subject.meanings | join(", ")}}</p>
     </div>
@@ -37,7 +45,11 @@
   <div class="row">
     {% for v in vocabulary %}
     <div class="card col-3">
-      <p class="text-jp">{{ v.subject.characters }}</p>
+      <p class="text-jp">
+        <a href="{{ v.subject.document_url }}">
+          {{ v.subject.characters }}
+        </a>
+      </p>
       <p class="text-jp">{{ v.subject.readings | join(", ") }}</p>
       <p>{{ v.subject.meanings | join(", ")}}</p>
     </div>
