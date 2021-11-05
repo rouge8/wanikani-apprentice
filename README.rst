@@ -1,8 +1,22 @@
 wanikani-apprentice
 ===================
 
+Setup
+-----
+
+.. code-block:: sh
+
+   brew bundle install
+   virtualenv -p $(brew --prefix python@3.10/bin/python3.10) ~/.virtualenvs/wanikani_apprentice
+   source ~/.virtualenvs/wanikani_apprentice/bin/activate
+   pip install 'pip >= 21.3'
+   pip install -r requirements.txt
+   overmind start
+
 Deploying
 ---------
+
+Deploys are done automatically on GitHub Actions, but can also be run manually:
 
 .. code-block:: sh
 
