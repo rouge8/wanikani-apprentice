@@ -11,7 +11,7 @@ TRUSTED_HOSTS = config("TRUSTED_HOSTS", cast=CommaSeparatedStrings)
 HTTPS_ONLY = config("HTTPS_ONLY", cast=bool, default=True)
 
 WANIKANI_API_KEY = config("WANIKANI_API_KEY", cast=Secret)
-SESSION_SECRET = config("SESSION_KEY", cast=Secret)
+SESSION_KEY = config("SESSION_KEY", cast=Secret)
 
 
 def git_revision() -> str:

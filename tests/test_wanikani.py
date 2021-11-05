@@ -16,12 +16,12 @@ from .factories import VocabularyFactory
 @pytest.mark.anyio
 class TestWaniKaniAPIClient:
     @pytest.fixture
-    def headers(self, client):
-        return dict(client.client.headers) | {
-            "Authorization": f"Bearer {client.api_key}",
+    def headers(self, api_client):
+        return dict(api_client.client.headers) | {
+            "Authorization": f"Bearer {api_client.api_key}",
         }
 
-    async def test_assignments(self, headers, client, httpx_mock, faker):
+    async def test_assignments(self, headers, api_client, httpx_mock, faker):
         assignments = [
             {
                 "id": faker.random_int(),
@@ -79,7 +79,7 @@ class TestWaniKaniAPIClient:
 
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/assignments",
+                f"{api_client.BASE_URL}/assignments",
                 params={"srs_stages": "1,2,3,4", "hidden": "false"},
             ),
             headers=headers,
@@ -88,10 +88,10 @@ class TestWaniKaniAPIClient:
             },
         )
 
-        resp = [a async for a in client.assignments()]
+        resp = [a async for a in api_client.assignments()]
         assert resp == expected_assignments
 
-    async def test_radicals(self, headers, client, httpx_mock, faker):
+    async def test_radicals(self, headers, api_client, httpx_mock, faker):
         radicals = [
             {
                 "id": faker.random_int(),
@@ -127,7 +127,7 @@ class TestWaniKaniAPIClient:
 
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={"types": "radical", "hidden": "false"},
             ),
             headers=headers,
@@ -139,10 +139,10 @@ class TestWaniKaniAPIClient:
             },
         )
 
-        resp = [r async for r in client.radicals()]
+        resp = [r async for r in api_client.radicals()]
         assert resp == expected_radicals
 
-    async def test_kanji(self, headers, client, httpx_mock, faker):
+    async def test_kanji(self, headers, api_client, httpx_mock, faker):
         kanji = [
             {
                 "id": faker.random_int(),
@@ -192,20 +192,20 @@ class TestWaniKaniAPIClient:
 
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={"types": "kanji", "hidden": "false"},
             ),
             headers=headers,
             json={
                 "pages": {
-                    "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=12345",  # noqa: E501
+                    "next_url": f"{api_client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=12345",  # noqa: E501
                 },
                 "data": [kanji[0]],
             },
         )
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={"types": "kanji", "hidden": "false", "page_after_id": "12345"},
             ),
             headers=headers,
@@ -217,10 +217,10 @@ class TestWaniKaniAPIClient:
             },
         )
 
-        resp = [k async for k in client.kanji()]
+        resp = [k async for k in api_client.kanji()]
         assert resp == expected_kanji
 
-    async def test_vocabulary(self, headers, client, httpx_mock, faker):
+    async def test_vocabulary(self, headers, api_client, httpx_mock, faker):
         vocabulary = [
             {
                 "id": faker.random_int(),
@@ -270,20 +270,20 @@ class TestWaniKaniAPIClient:
 
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={"types": "vocabulary", "hidden": "false"},
             ),
             headers=headers,
             json={
                 "pages": {
-                    "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=987",  # noqa: E501
+                    "next_url": f"{api_client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=987",  # noqa: E501
                 },
                 "data": [vocabulary[0]],
             },
         )
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={
                     "types": "vocabulary",
                     "hidden": "false",
@@ -293,14 +293,14 @@ class TestWaniKaniAPIClient:
             headers=headers,
             json={
                 "pages": {
-                    "next_url": f"{client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=1234",  # noqa: E501
+                    "next_url": f"{api_client.BASE_URL}/subjects?types=kanji&hidden=false&page_after_id=1234",  # noqa: E501
                 },
                 "data": [vocabulary[1]],
             },
         )
         httpx_mock.add_response(
             url=URL(
-                f"{client.BASE_URL}/subjects",
+                f"{api_client.BASE_URL}/subjects",
                 params={
                     "types": "vocabulary",
                     "hidden": "false",
@@ -316,10 +316,10 @@ class TestWaniKaniAPIClient:
             },
         )
 
-        resp = [v async for v in client.vocabulary()]
+        resp = [v async for v in api_client.vocabulary()]
         assert resp == expected_vocabulary
 
-    async def test_username(self, headers, client, httpx_mock, faker):
+    async def test_username(self, headers, api_client, httpx_mock, faker):
         resp = {
             "data": {
                 "username": faker.simple_profile()["username"],
@@ -327,9 +327,9 @@ class TestWaniKaniAPIClient:
         }
 
         httpx_mock.add_response(
-            url=URL(f"{client.BASE_URL}/user"),
+            url=URL(f"{api_client.BASE_URL}/user"),
             headers=headers,
             json=resp,
         )
 
-        assert await client.username() == resp["data"]["username"]
+        assert await api_client.username() == resp["data"]["username"]

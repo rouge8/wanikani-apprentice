@@ -2,9 +2,20 @@ import factory
 import factory.fuzzy
 
 from wanikani_apprentice.db import DB
+from wanikani_apprentice.models import Assignment
 from wanikani_apprentice.models import Kanji
 from wanikani_apprentice.models import Radical
 from wanikani_apprentice.models import Vocabulary
+from wanikani_apprentice.wanikani import APPRENTICE_SRS_STAGES
+
+
+class AssignmentFactory(factory.Factory):
+    class Meta:
+        model = Assignment
+
+    subject = None
+    srs_stage = factory.fuzzy.FuzzyChoice(APPRENTICE_SRS_STAGES)
+    available_at = factory.Faker("future_date")
 
 
 class DatabaseFactory(factory.Factory):

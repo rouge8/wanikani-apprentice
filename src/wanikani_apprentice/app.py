@@ -53,6 +53,7 @@ async def login(request: Request) -> _TemplateResponse | RedirectResponse:
                 return templates.TemplateResponse(
                     "login.html.j2",
                     {"request": request, "invalid_api_key": True},
+                    status_code=401,
                 )
             else:
                 raise err
@@ -115,7 +116,7 @@ def create_app() -> Starlette:
 
     _populate_db = partial(populate_db, api)
 
-    async def shutdown_client() -> None:
+    async def shutdown_client() -> None:  # pragma: no cover
         await httpx_client.aclose()
 
     middleware.append(
@@ -123,7 +124,7 @@ def create_app() -> Starlette:
     )
     if config.HTTPS_ONLY:
         middleware.append(Middleware(HTTPSRedirectMiddleware))
-    middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_SECRET))
+    middleware.append(Middleware(SessionMiddleware, secret_key=config.SESSION_KEY))
 
     return Starlette(
         debug=config.DEBUG,

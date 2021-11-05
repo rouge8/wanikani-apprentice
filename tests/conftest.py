@@ -1,4 +1,5 @@
 import pytest
+from starlette.testclient import TestClient
 
 
 @pytest.fixture
@@ -7,7 +8,16 @@ def anyio_backend():
 
 
 @pytest.fixture
-async def client():
+def test_client():
+    """An ASGI test client"""
+    from wanikani_apprentice.app import create_app
+
+    app = create_app()
+    return TestClient(app)
+
+
+@pytest.fixture
+async def api_client():
     """A WaniKaniAPIClient"""
     from wanikani_apprentice.wanikani import WaniKaniAPIClient
 
