@@ -1,4 +1,5 @@
 from functools import partial
+import operator
 
 import httpx
 import sentry_sdk
@@ -78,7 +79,12 @@ async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
     vocabulary = []
 
     api = WaniKaniAPIClient(request.session[SESSION_API_KEY], client=httpx_client)
-    async for assignment in api.assignments():
+
+    assignments = [assignment async for assignment in api.assignments()]
+    # Sort assignments by time until next review, soonest available first
+    assignments.sort(key=operator.attrgetter("available_at"))
+
+    for assignment in assignments:
         if isinstance(assignment.subject, Radical):
             radicals.append(assignment)
         elif isinstance(assignment.subject, Kanji):

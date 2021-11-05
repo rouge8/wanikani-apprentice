@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterable
+import operator
 
 import attr
 import httpx
@@ -160,6 +161,15 @@ class TestAssignments:
         ]
 
         fake_api._assignments = radicals + kanji + vocabulary
+
+        # Assignments will be sorted by `available_at`, with the soonest
+        # available first
+        radicals.sort(key=operator.attrgetter("available_at"))
+        kanji.sort(key=operator.attrgetter("available_at"))
+        vocabulary.sort(key=operator.attrgetter("available_at"))
+
+        # Sanity check the sort
+        assert radicals[0].available_at < radicals[-1].available_at
 
         # Login
         resp = test_client.post("/login", data={"api_key": faker.pystr()})
