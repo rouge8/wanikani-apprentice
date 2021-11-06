@@ -1,5 +1,6 @@
 from functools import partial
 import operator
+import os.path
 
 import httpx
 import sentry_sdk
@@ -11,7 +12,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
+from starlette.routing import Mount
 from starlette.routing import Route
+from starlette.staticfiles import StaticFiles
 from starlette.templating import _TemplateResponse
 
 from . import config
@@ -20,6 +23,7 @@ from .db import populate_db
 from .models import Kanji
 from .models import Radical
 from .models import Vocabulary
+from .resources import HERE
 from .resources import httpx_client
 from .resources import templates
 from .utils import is_logged_in
@@ -146,6 +150,11 @@ def create_app() -> Starlette:
             Route("/logout", logout),
             Route("/assignments", assignments),
             Route("/test-500", test_500),
+            Mount(
+                "/static",
+                app=StaticFiles(directory=os.path.join(HERE, "static")),
+                name="static",
+            ),
         ],
         middleware=middleware,
     )
