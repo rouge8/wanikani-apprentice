@@ -143,7 +143,7 @@ def create_app() -> Starlette:
         Middleware(SentryAsgiMiddleware),
     ]
 
-    api = WaniKaniAPIClient(config.WANIKANI_API_KEY, client=httpx_client)
+    api = WaniKaniAPIClient(str(config.WANIKANI_API_KEY), client=httpx_client)
 
     _populate_db = partial(populate_db, api)
 

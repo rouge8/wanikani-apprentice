@@ -60,7 +60,7 @@ sniffio==1.2.0
     #   anyio
     #   httpcore
     #   httpx
-starlette==0.16.0
+starlette==0.17.0
     # via wanikani-apprentice
 structlog==21.2.0
     # via wanikani-apprentice
