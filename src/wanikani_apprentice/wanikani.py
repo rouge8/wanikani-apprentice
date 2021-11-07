@@ -112,10 +112,19 @@ class WaniKaniAPIClient:
     async def radicals(self) -> AsyncIterable[Radical]:
         """Get all radicals"""
         async for radical in self._subjects(SubjectType.RADICAL):
+            character_svg_path = [
+                image["url"].split("https://files.wanikani.com/", 1)[1]
+                for image in radical["data"]["character_images"]
+                if image["content_type"] == "image/svg+xml"
+                and image["metadata"]["inline_styles"] is True
+            ]
+            character_svg_path = character_svg_path[0] if character_svg_path else None
+
             yield Radical(
                 id=radical["id"],
                 document_url=radical["data"]["document_url"],
                 characters=radical["data"]["characters"],
+                character_svg_path=character_svg_path,
                 meanings=[
                     meaning["meaning"]
                     for meaning in radical["data"]["meanings"]

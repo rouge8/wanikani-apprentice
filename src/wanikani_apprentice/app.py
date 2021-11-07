@@ -12,10 +12,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
+from starlette.responses import Response
 from starlette.routing import Mount
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import _TemplateResponse
+import structlog
 
 from . import config
 from .constants import SESSION_API_KEY
@@ -28,6 +30,8 @@ from .resources import httpx_client
 from .resources import templates
 from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
+
+log = structlog.get_logger()
 
 
 async def index(request: Request) -> RedirectResponse:
@@ -109,6 +113,23 @@ async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
     )
 
 
+async def radical_svg(request: Request) -> Response:
+    """
+    Mirror the WaniKani radical SVGs, replacing the ``stroke`` color with our
+    primary color.
+
+    This is necessary because browsers attempt to download the SVGs from their
+    CDN instead of render them.
+    """
+    url = f"https://files.wanikani.com/{request.path_params['path']}"
+    log.info("downloading SVG", url=url)
+    resp = await httpx_client.get(url)
+    resp.raise_for_status()
+    # TODO: Keep in sync with --bs-primary in the CSS
+    svg = resp.content.replace(b"stroke:#000", b"stroke:#593196")
+    return Response(svg, media_type="image/svg+xml")
+
+
 async def test_500(request: Request) -> None:
     1 / 0
 
@@ -149,6 +170,7 @@ def create_app() -> Starlette:
             Route("/login", login, methods=["GET", "POST"]),
             Route("/logout", logout),
             Route("/assignments", assignments),
+            Route("/radical-svg/{path}", radical_svg),
             Route("/test-500", test_500),
             Mount(
                 "/static",

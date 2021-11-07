@@ -7,7 +7,8 @@ import attr
 class Radical:
     id: int
     document_url: str
-    characters: str
+    characters: str | None
+    character_svg_path: str | None
     meanings: list[str]
 
 

@@ -99,6 +99,7 @@ class TestWaniKaniAPIClient:
                 "data": {
                     "document_url": faker.url(),
                     "characters": faker.pystr(),
+                    "character_images": [],
                     "meanings": [
                         {
                             "meaning": faker.word(),
@@ -116,6 +117,7 @@ class TestWaniKaniAPIClient:
                 id=r["id"],
                 document_url=r["data"]["document_url"],
                 characters=r["data"]["characters"],
+                character_svg_path=None,
                 meanings=[
                     meaning["meaning"]
                     for meaning in r["data"]["meanings"]
@@ -123,6 +125,82 @@ class TestWaniKaniAPIClient:
                 ],
             )
             for r in radicals
+        ]
+
+        httpx_mock.add_response(
+            url=URL(
+                f"{api_client.BASE_URL}/subjects",
+                params={"types": "radical", "hidden": "false"},
+            ),
+            headers=headers,
+            json={
+                "pages": {
+                    "next_url": None,
+                },
+                "data": radicals,
+            },
+        )
+
+        resp = [r async for r in api_client.radicals()]
+        assert resp == expected_radicals
+
+    async def test_radicals_with_character_images(
+        self,
+        headers,
+        api_client,
+        httpx_mock,
+        faker,
+    ):
+        radicals = [
+            {
+                "id": faker.random_int(),
+                "object": "radical",
+                "data": {
+                    "document_url": faker.url(),
+                    "characters": None,
+                    "character_images": [
+                        {
+                            "url": f"https://files.wanikani.com/{faker.uri_path()}",
+                            "content_type": "image/png",
+                        },
+                        {
+                            "url": "https://files.wanikani.com/the-good-path",
+                            "content_type": "image/svg+xml",
+                            "metadata": {
+                                "inline_styles": True,
+                            },
+                        },
+                        {
+                            "url": f"https://files.wanikani.com/{faker.uri_path()}",
+                            "content_type": "image/svg+xml",
+                            "metadata": {
+                                "inline_styles": False,
+                            },
+                        },
+                    ],
+                    "meanings": [
+                        {
+                            "meaning": faker.word(),
+                            "primary": faker.pybool(),
+                            "accepted_answer": faker.pybool(),
+                        }
+                        for _ in range(faker.random_int(min=1, max=3))
+                    ],
+                },
+            },
+        ]
+        expected_radicals = [
+            Radical(
+                id=radicals[0]["id"],
+                document_url=radicals[0]["data"]["document_url"],
+                characters=None,
+                character_svg_path="the-good-path",
+                meanings=[
+                    meaning["meaning"]
+                    for meaning in radicals[0]["data"]["meanings"]
+                    if meaning["accepted_answer"]
+                ],
+            ),
         ]
 
         httpx_mock.add_response(

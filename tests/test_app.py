@@ -189,6 +189,19 @@ class TestAssignments:
         assert resp.headers["Location"].endswith("/login")
 
 
+def test_radical_svg(test_client, httpx_mock, faker):
+    path = faker.uri_path()
+
+    httpx_mock.add_response(
+        url=f"https://files.wanikani.com/{path}",
+        content=b"foo bar stroke:#000 other:#000",
+    )
+
+    resp = test_client.get(f"/radical-svg/{path}")
+    assert resp.status_code == 200
+    assert resp.content == b"foo bar stroke:#593196 other:#000"
+
+
 def test_test_500():
     from wanikani_apprentice.app import create_app
 

@@ -14,7 +14,11 @@
     <div class="card col-md-3 col-6">
       <p class="radical">
         <a href="{{ radical.subject.document_url }}">
+          {% if radical.subject.characters %}
           {{ radical.subject.characters }}
+          {% else %}
+          <img src="{{ url_for('radical_svg', path=radical.subject.character_svg_path) }}" alt="radical for {{ radical.subject.meanings[0] }}" />
+          {% endif %}
         </a>
       </p>
       <p>{{ radical.subject.meanings | join(", ")}}</p>

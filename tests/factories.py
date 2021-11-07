@@ -49,6 +49,7 @@ class RadicalFactory(DatabaseFactory):
     id = factory.Sequence(lambda n: n)
     document_url = factory.Faker("url")
     characters = factory.fuzzy.FuzzyText(length=1)
+    character_svg_path = None
     meanings = []
 
 
