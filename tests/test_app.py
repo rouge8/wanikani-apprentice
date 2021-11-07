@@ -190,7 +190,7 @@ class TestAssignments:
 
 
 def test_radical_svg(test_client, httpx_mock, faker):
-    path = faker.uri_path()
+    path = faker.pystr()
 
     httpx_mock.add_response(
         url=f"https://files.wanikani.com/{path}",
