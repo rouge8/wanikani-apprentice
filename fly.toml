@@ -19,6 +19,10 @@ processes = []
   allowed_public_ports = []
   auto_rollback = true
 
+[[statics]]
+  guest_path = "/app/src/wanikani_apprentice/static"
+  url_prefix = "/static"
+
 [[services]]
   http_checks = []
   internal_port = 8080
