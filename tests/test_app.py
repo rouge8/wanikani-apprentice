@@ -6,6 +6,7 @@ import httpx
 import pytest
 from starlette.testclient import TestClient
 
+from wanikani_apprentice.constants import BS_PRIMARY_COLOR
 from wanikani_apprentice.models import Assignment
 
 from .factories import AssignmentFactory
@@ -199,7 +200,7 @@ def test_radical_svg(test_client, httpx_mock, faker):
 
     resp = test_client.get(f"/radical-svg/{path}")
     assert resp.status_code == 200
-    assert resp.content == b"foo bar stroke:#593196 other:#000"
+    assert resp.text == f"foo bar stroke:{BS_PRIMARY_COLOR} other:#000"
 
 
 def test_test_500():

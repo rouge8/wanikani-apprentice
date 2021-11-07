@@ -20,12 +20,13 @@ from starlette.templating import _TemplateResponse
 import structlog
 
 from . import config
+from .constants import BS_PRIMARY_COLOR
+from .constants import HERE
 from .constants import SESSION_API_KEY
 from .db import populate_db
 from .models import Kanji
 from .models import Radical
 from .models import Vocabulary
-from .resources import HERE
 from .resources import httpx_client
 from .resources import templates
 from .utils import is_logged_in
@@ -125,8 +126,7 @@ async def radical_svg(request: Request) -> Response:
     log.info("downloading SVG", url=url)
     resp = await httpx_client.get(url)
     resp.raise_for_status()
-    # TODO: Keep in sync with --bs-primary in the CSS
-    svg = resp.content.replace(b"stroke:#000", b"stroke:#593196")
+    svg = resp.text.replace("stroke:#000", f"stroke:{BS_PRIMARY_COLOR}")
     return Response(svg, media_type="image/svg+xml")
 
 
