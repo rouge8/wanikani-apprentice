@@ -1,5 +1,6 @@
 import factory
 import factory.fuzzy
+import pytz
 
 from wanikani_apprentice.db import DB
 from wanikani_apprentice.models import Assignment
@@ -15,7 +16,7 @@ class AssignmentFactory(factory.Factory):
 
     subject = None
     srs_stage = factory.fuzzy.FuzzyChoice(APPRENTICE_SRS_STAGES)
-    available_at = factory.Faker("future_date")
+    available_at = factory.Faker("future_datetime", tzinfo=pytz.utc)
 
 
 class DatabaseFactory(factory.Factory):

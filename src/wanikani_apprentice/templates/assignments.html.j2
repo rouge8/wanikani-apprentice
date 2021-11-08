@@ -22,6 +22,7 @@
         </a>
       </p>
       <p>{{ radical.subject.meanings | join(", ")}}</p>
+      <p>Review available {{ radical.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>
@@ -39,6 +40,7 @@
       </p>
       <p>{{ k.subject.readings | join(", ")}}</p>
       <p>{{ k.subject.meanings | join(", ")}}</p>
+      <p>Review available {{ k.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>
@@ -56,6 +58,7 @@
       </p>
       <p>{{ v.subject.readings | join(", ") }}</p>
       <p>{{ v.subject.meanings | join(", ")}}</p>
+      <p>Review available {{ v.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>

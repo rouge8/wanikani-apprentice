@@ -12,6 +12,7 @@ requires-python = ">=3.10"
 dependencies = [
   "anyio",
   "attrs",
+  "babel",
   "ciso8601",
   "gunicorn",
   "httptools",
@@ -32,3 +33,7 @@ Home = "https://github.com/rouge8/wanikani-apprentice"
 [tool.mypy]
 strict = true
 allow_redefinition = true
+
+[[tool.mypy.overrides]]
+module = "babel.*"
+ignore_missing_imports = true

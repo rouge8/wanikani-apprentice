@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import partial
 import operator
 import os.path
@@ -110,6 +111,7 @@ async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
             "radicals": radicals,
             "kanji": kanji,
             "vocabulary": vocabulary,
+            "now": datetime.now().astimezone(),
         },
     )
 

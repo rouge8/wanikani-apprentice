@@ -15,6 +15,8 @@ asgiref==3.4.1
     # via uvicorn
 attrs==21.2.0
     # via wanikani-apprentice
+babel==2.9.1
+    # via wanikani-apprentice
 certifi==2021.10.8
     # via
     #   httpx
@@ -49,6 +51,8 @@ markupsafe==2.0.1
     # via jinja2
 python-multipart==0.0.5
     # via wanikani-apprentice
+pytz==2021.3
+    # via babel
 rfc3986[idna2008]==1.5.0
     # via httpx
 sentry-sdk==1.4.3
