@@ -22,7 +22,7 @@
         </a>
       </p>
       <p>{{ radical.subject.meanings | join(", ")}}</p>
-      <p>Review {{ radical.display_time_remaining(now) }}</p>
+      <p class="fst-italic">Review {{ radical.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>
@@ -40,7 +40,7 @@
       </p>
       <p>{{ k.subject.readings | join(", ")}}</p>
       <p>{{ k.subject.meanings | join(", ")}}</p>
-      <p>Review {{ k.display_time_remaining(now) }}</p>
+      <p class="fst-italic">Review {{ k.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>
@@ -58,7 +58,7 @@
       </p>
       <p>{{ v.subject.readings | join(", ") }}</p>
       <p>{{ v.subject.meanings | join(", ")}}</p>
-      <p>Review {{ v.display_time_remaining(now) }}</p>
+      <p class="fst-italic">Review {{ v.display_time_remaining(now) }}</p>
     </div>
     {% endfor %}
   </div>
