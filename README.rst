@@ -4,14 +4,35 @@ wanikani-apprentice
 Setup
 -----
 
-.. code-block:: sh
+1. Install the system dependencies:
 
-   brew bundle install
-   virtualenv -p $(brew --prefix python@3.10/bin/python3.10) ~/.virtualenvs/wanikani_apprentice
-   source ~/.virtualenvs/wanikani_apprentice/bin/activate
-   pip install 'pip >= 21.3'
-   pip install -r requirements.txt
-   overmind start
+   .. code-block:: sh
+
+      brew bundle install
+
+2. Create a virtualenv:
+
+   .. code-block:: sh
+
+      virtualenv -p $(brew --prefix python@3.10/bin/python3.10) ~/.virtualenvs/wanikani_apprentice
+      source ~/.virtualenvs/wanikani_apprentice/bin/activate
+      pip install 'pip >= 21.3'
+      pip install -r requirements.txt
+
+3. Copy the sample config file
+
+   .. code-block:: sh
+
+      cp .env.sample .env
+
+4. Update ``.env`` with a real ``WANIKANI_API_KEY``
+   https://www.wanikani.com/settings/personal_access_tokens.
+
+5. Start the server:
+
+   .. code-block:: sh
+
+      overmind start
 
 Deploying
 ---------
