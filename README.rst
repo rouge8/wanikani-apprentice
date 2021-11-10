@@ -14,7 +14,7 @@ Setup
 
    .. code-block:: sh
 
-      virtualenv -p $(brew --prefix python@3.10)/bin/python3.10 ~/.virtualenvs/wanikani_apprentice
+      $(brew --prefix python@3.10)/bin/python3.10 -m venv ~/.virtualenvs/wanikani_apprentice
       source ~/.virtualenvs/wanikani_apprentice/bin/activate
       pip install 'pip >= 21.3'
       pip install -r requirements.txt
