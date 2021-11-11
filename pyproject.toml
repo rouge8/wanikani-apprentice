@@ -37,3 +37,6 @@ allow_redefinition = true
 [[tool.mypy.overrides]]
 module = "babel.*"
 ignore_missing_imports = true
+
+[tool.pyright]
+venv = "wanikani-apprentice"
