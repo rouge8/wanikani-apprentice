@@ -24,7 +24,6 @@ class FakeAPI:
     _assignments: list[Assignment] = attr.field(init=False, factory=list)
 
     def __call__(self, api_key: str, client: httpx.AsyncClient) -> "FakeAPI":
-        print("calling")
         self.api_key = api_key
         self.client = client
         return self
