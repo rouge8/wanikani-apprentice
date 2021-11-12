@@ -6,6 +6,7 @@
     <h1>Apprentice Assignments</h1>
   </div>
 
+  {% if radicals %}
   <div class="row">
     <h2>Radicals</h2>
   </div>
@@ -26,7 +27,9 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
+  {% if kanji %}
   <div class="row">
     <h2>Kanji</h2>
   </div>
@@ -44,7 +47,9 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
+  {% if vocabulary %}
   <div class="row">
     <h2>Vocabulary</h2>
   </div>
@@ -62,6 +67,7 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
 </div>
 {% endblock %}
