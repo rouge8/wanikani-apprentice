@@ -2,6 +2,17 @@ import pytest
 from starlette.testclient import TestClient
 
 
+@pytest.fixture(autouse=True, scope="session")
+def config():
+    from starlette.config import environ
+
+    environ["DEBUG"] = "false"
+    environ["TRUSTED_HOSTS"] = "testserver"
+    environ["HTTPS_ONLY"] = "false"
+    environ["WANIKANI_API_KEY"] = "fake-key"
+    environ["SESSION_KEY"] = "session-secret"
+
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
