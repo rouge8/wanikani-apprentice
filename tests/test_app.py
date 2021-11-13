@@ -29,7 +29,10 @@ class FakeAPI:
         return self
 
     async def username(self) -> str:
-        return self._username
+        if self._username is not None:
+            return self._username
+        else:
+            raise NotImplementedError
 
     async def assignments(self) -> AsyncIterable[Assignment]:
         for assignment in self._assignments:
