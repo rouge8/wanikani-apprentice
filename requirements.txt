@@ -47,7 +47,7 @@ idna==3.3
     #   rfc3986
 itsdangerous==2.0.1
     # via wanikani-apprentice
-jinja2==3.0.2
+jinja2==3.0.3
     # via wanikani-apprentice
 markupsafe==2.0.1
     # via jinja2
