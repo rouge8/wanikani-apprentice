@@ -43,11 +43,8 @@ processes = []
     handlers = ["tls", "http"]
     port = 443
 
-  [[services.http_checks]]
+  [[services.tcp_checks]]
     grace_period = "10s"
     interval = "10s"
-    method = "get"
-    path = "/login"
-    protocol = "http"
     timeout = "2s"
     [services.http_checks.headers]
