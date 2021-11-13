@@ -2,6 +2,17 @@ import pytest
 from starlette.testclient import TestClient
 
 
+@pytest.fixture(autouse=True)
+def config():
+    from wanikani_apprentice import config
+
+    config.DEBUG = False
+    config.TRUSTED_HOSTS = "*"
+    config.HTTPS_ONLY = False
+    config.WANIKANI_API_KEY = "fake-key"
+    config.SESSION_KEY = "session-secret"
+
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
