@@ -50,3 +50,4 @@ processes = []
     path = "/login"
     protocol = "http"
     timeout = "2s"
+    [services.http_checks.headers]
