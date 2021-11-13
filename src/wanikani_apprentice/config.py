@@ -1,5 +1,4 @@
-import subprocess
-
+import pygit2
 from starlette.config import Config
 from starlette.datastructures import CommaSeparatedStrings
 from starlette.datastructures import Secret
@@ -15,4 +14,6 @@ SESSION_KEY = config("SESSION_KEY", cast=Secret)
 
 
 def git_revision() -> str:
-    return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii")
+    repo = pygit2.Repository(".")
+    head = repo.revparse_single("HEAD")
+    return head.hex  # type: ignore

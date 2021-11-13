@@ -21,6 +21,8 @@ certifi==2021.10.8
     # via
     #   httpx
     #   sentry-sdk
+cffi==1.15.0
+    # via pygit2
 charset-normalizer==2.0.7
     # via httpx
 ciso8601==2.2.0
@@ -49,6 +51,10 @@ jinja2==3.0.2
     # via wanikani-apprentice
 markupsafe==2.0.1
     # via jinja2
+pycparser==2.21
+    # via cffi
+pygit2==1.7.0
+    # via wanikani-apprentice
 python-multipart==0.0.5
     # via wanikani-apprentice
 pytz==2021.3

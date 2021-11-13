@@ -19,6 +19,7 @@ dependencies = [
   "httpx",
   "itsdangerous",
   "jinja2",
+  "pygit2",
   "python-multipart",
   "sentry-sdk",
   "starlette",
@@ -36,6 +37,10 @@ allow_redefinition = true
 
 [[tool.mypy.overrides]]
 module = "babel.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pygit2"
 ignore_missing_imports = true
 
 [tool.pyright]

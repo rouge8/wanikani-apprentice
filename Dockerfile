@@ -8,9 +8,6 @@ RUN pip install -U 'pip==21.3.*' \
     && rm -rf ~/.cache/pip
 
 FROM python:3.10-slim
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y git \
-    && rm -rf /var/lib/apt/lists/*
 WORKDIR /whl
 COPY --from=build /whl/*.whl /whl/
 RUN pip install -U 'pip==21.3.*' \
