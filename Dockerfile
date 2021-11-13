@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.3
 FROM python:3.10 AS build
 RUN mkdir -p /app/src/wanikani_apprentice/
 WORKDIR /whl
@@ -9,8 +10,8 @@ RUN pip install -U 'pip==21.3.*' \
 
 FROM python:3.10-slim
 WORKDIR /whl
-COPY --from=build /whl/*.whl /whl/
-RUN pip install -U 'pip==21.3.*' \
+RUN --mount=type=bind,target=/whl,source=/whl,from=build \
+    pip install -U 'pip==21.3.*' \
     && pip install *.whl \
     && rm -rf ~/.cache/pip
 WORKDIR /app
