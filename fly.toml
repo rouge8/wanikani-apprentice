@@ -24,7 +24,6 @@ processes = []
   url_prefix = "/static"
 
 [[services]]
-  http_checks = []
   internal_port = 8080
   processes = ["app"]
   protocol = "tcp"
@@ -43,7 +42,10 @@ processes = []
     handlers = ["tls", "http"]
     port = 443
 
-  [[services.tcp_checks]]
+  [[services.http_checks]]
     grace_period = "10s"
     interval = "10s"
+    method = "get"
+    path = "/login"
+    protocol = "https"
     timeout = "2s"
