@@ -3,6 +3,7 @@ from functools import partial
 import operator
 import os.path
 
+import attr
 import httpx
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
@@ -18,6 +19,10 @@ from starlette.routing import Mount
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import _TemplateResponse
+from starlette.types import ASGIApp
+from starlette.types import Receive
+from starlette.types import Scope
+from starlette.types import Send
 import structlog
 
 from . import config
@@ -34,6 +39,18 @@ from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
 log = structlog.get_logger()
+
+
+@attr.frozen
+class LBHeartbeatMiddleware:
+    app: ASGIApp
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"] == "/__lbheartbeat__":
+            response = Response("OK")
+            await response(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
 
 
 async def index(request: Request) -> RedirectResponse:
@@ -143,6 +160,7 @@ def create_app() -> Starlette:
     )
     middleware = [
         Middleware(SentryAsgiMiddleware),
+        Middleware(LBHeartbeatMiddleware),
     ]
 
     api = WaniKaniAPIClient(str(config.WANIKANI_API_KEY), client=httpx_client)

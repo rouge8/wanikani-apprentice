@@ -227,3 +227,17 @@ def test_https_only(mocker):
     resp = test_client.get("/", allow_redirects=False)
     assert resp.status_code == 307
     assert resp.headers["Location"].startswith("https://")
+
+
+def test_lbheartbeat_bypass_https_only(mocker):
+    from wanikani_apprentice import config
+    from wanikani_apprentice.app import create_app
+
+    mocker.patch.object(config, "HTTPS_ONLY", True)
+
+    app = create_app()
+    test_client = TestClient(app)
+
+    resp = test_client.get("/__lbheartbeat__", allow_redirects=False)
+    assert resp.status_code == 200
+    assert resp.text == "OK"
