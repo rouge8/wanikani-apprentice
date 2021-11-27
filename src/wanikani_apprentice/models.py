@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from typing import Union
 
 import attr
 from babel.dates import format_timedelta
@@ -32,9 +33,12 @@ class Vocabulary:
     readings: list[str]
 
 
+AssignmentType = Union[Radical, Kanji, Vocabulary]
+
+
 @attr.frozen
 class Assignment:
-    subject: Radical | Kanji | Vocabulary
+    subject: AssignmentType
     srs_stage: int
     available_at: datetime
 

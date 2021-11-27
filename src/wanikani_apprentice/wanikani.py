@@ -10,6 +10,7 @@ import structlog
 
 from .db import DB
 from .models import Assignment
+from .models import AssignmentType
 from .models import Kanji
 from .models import Radical
 from .models import Vocabulary
@@ -72,12 +73,14 @@ class WaniKaniAPIClient:
             subject_id = assignment["data"]["subject_id"]
             subject_type = assignment["data"]["subject_type"]
 
+            subject: AssignmentType
+
             if subject_type == SubjectType.RADICAL:
                 subject = DB.radical[subject_id]
             elif subject_type == SubjectType.KANJI:
-                subject = DB.kanji[subject_id]  # type: ignore[assignment]
+                subject = DB.kanji[subject_id]
             elif subject_type == SubjectType.VOCABULARY:
-                subject = DB.vocabulary[subject_id]  # type: ignore[assignment]
+                subject = DB.vocabulary[subject_id]
             else:
                 raise NotImplementedError
 
