@@ -37,6 +37,7 @@ Home = "https://github.com/rouge8/wanikani-apprentice"
 [tool.mypy]
 strict = true
 allow_redefinition = true
+warn_unreachable = true
 
 [[tool.mypy.overrides]]
 module = "babel.*"
