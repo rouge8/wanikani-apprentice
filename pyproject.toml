@@ -6,7 +6,6 @@ build-backend = "flit_core.buildapi"
 name = "wanikani_apprentice"
 authors = [{name = "Andy Freeland", email = "andy@andyfreeland.net"}]
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Private :: Do Not Upload",
 ]
 dynamic = ["version", "description"]
