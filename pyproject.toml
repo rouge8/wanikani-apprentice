@@ -33,6 +33,9 @@ dependencies = [
 [project.urls]
 Home = "https://github.com/rouge8/wanikani-apprentice"
 
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+
 [tool.mypy]
 strict = true
 allow_redefinition = true
