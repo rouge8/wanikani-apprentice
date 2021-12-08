@@ -14,6 +14,7 @@ from .models import Kanji
 from .models import Radical
 from .models import Subject
 from .models import Vocabulary
+from .utils import assert_never
 
 log = structlog.get_logger()
 
@@ -71,18 +72,21 @@ class WaniKaniAPIClient:
         )
         for assignment in resp.json()["data"]:
             subject_id = assignment["data"]["subject_id"]
-            subject_type = assignment["data"]["subject_type"]
+            subject_type: SubjectType = getattr(
+                SubjectType,
+                assignment["data"]["subject_type"].upper(),
+            )
 
             subject: Subject
 
-            if subject_type == SubjectType.RADICAL:
+            if subject_type is SubjectType.RADICAL:
                 subject = DB.radical[subject_id]
-            elif subject_type == SubjectType.KANJI:
+            elif subject_type is SubjectType.KANJI:
                 subject = DB.kanji[subject_id]
-            elif subject_type == SubjectType.VOCABULARY:
+            elif subject_type is SubjectType.VOCABULARY:
                 subject = DB.vocabulary[subject_id]
             else:
-                raise NotImplementedError
+                assert_never(subject_type)
 
             yield Assignment(
                 subject=subject,

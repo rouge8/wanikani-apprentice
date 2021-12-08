@@ -35,6 +35,7 @@ from .models import Radical
 from .models import Vocabulary
 from .resources import httpx_client
 from .resources import templates
+from .utils import assert_never
 from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
@@ -119,7 +120,7 @@ async def assignments(request: Request) -> _TemplateResponse | RedirectResponse:
         elif isinstance(assignment.subject, Vocabulary):
             vocabulary.append(assignment)
         else:
-            raise NotImplementedError
+            assert_never(assignment.subject)
 
     return templates.TemplateResponse(
         "assignments.html.j2",
