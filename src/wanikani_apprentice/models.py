@@ -33,12 +33,12 @@ class Vocabulary:
     readings: list[str]
 
 
-AssignmentType = Union[Radical, Kanji, Vocabulary]
+Subject = Union[Radical, Kanji, Vocabulary]
 
 
 @attr.frozen
 class Assignment:
-    subject: AssignmentType
+    subject: Subject
     srs_stage: int
     available_at: datetime
 

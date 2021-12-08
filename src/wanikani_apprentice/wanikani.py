@@ -10,9 +10,9 @@ import structlog
 
 from .db import DB
 from .models import Assignment
-from .models import AssignmentType
 from .models import Kanji
 from .models import Radical
+from .models import Subject
 from .models import Vocabulary
 
 log = structlog.get_logger()
@@ -73,7 +73,7 @@ class WaniKaniAPIClient:
             subject_id = assignment["data"]["subject_id"]
             subject_type = assignment["data"]["subject_type"]
 
-            subject: AssignmentType
+            subject: Subject
 
             if subject_type == SubjectType.RADICAL:
                 subject = DB.radical[subject_id]
