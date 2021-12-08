@@ -2,6 +2,7 @@ import ciso8601
 from httpx import URL
 import pytest
 
+from wanikani_apprentice.errors import UnknownSubjectError
 from wanikani_apprentice.models import Assignment
 from wanikani_apprentice.models import Kanji
 from wanikani_apprentice.models import Radical
@@ -90,6 +91,40 @@ class TestWaniKaniAPIClient:
 
         resp = [a async for a in api_client.assignments()]
         assert resp == expected_assignments
+
+    async def test_assignments_unknown_subject(
+        self,
+        headers,
+        api_client,
+        httpx_mock,
+        faker,
+    ):
+        assignments = [
+            {
+                "id": faker.random_int(),
+                "object": "assignment",
+                "data": {
+                    "subject_id": faker.random_int(),
+                    "subject_type": "radical",
+                    "srs_stage": faker.random_int(),
+                    "available_at": faker.iso8601() + "Z",
+                },
+            },
+        ]
+
+        httpx_mock.add_response(
+            url=URL(
+                f"{api_client.BASE_URL}/assignments",
+                params={"srs_stages": "1,2,3,4", "hidden": "false"},
+            ),
+            headers=headers,
+            json={
+                "data": assignments,
+            },
+        )
+
+        with pytest.raises(UnknownSubjectError):
+            [a async for a in api_client.assignments()]
 
     async def test_radicals(self, headers, api_client, httpx_mock, faker):
         radicals = [

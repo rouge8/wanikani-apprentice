@@ -9,6 +9,7 @@ import httpx
 import structlog
 
 from .db import DB
+from .errors import UnknownSubjectError
 from .models import Assignment
 from .models import Kanji
 from .models import Radical
@@ -79,14 +80,17 @@ class WaniKaniAPIClient:
 
             subject: Subject
 
-            if subject_type is SubjectType.RADICAL:
-                subject = DB.radical[subject_id]
-            elif subject_type is SubjectType.KANJI:
-                subject = DB.kanji[subject_id]
-            elif subject_type is SubjectType.VOCABULARY:
-                subject = DB.vocabulary[subject_id]
-            else:
-                assert_never(subject_type)
+            try:
+                if subject_type is SubjectType.RADICAL:
+                    subject = DB.radical[subject_id]
+                elif subject_type is SubjectType.KANJI:
+                    subject = DB.kanji[subject_id]
+                elif subject_type is SubjectType.VOCABULARY:
+                    subject = DB.vocabulary[subject_id]
+                else:
+                    assert_never(subject_type)
+            except KeyError as err:
+                raise UnknownSubjectError(subject_id) from err
 
             yield Assignment(
                 subject=subject,
