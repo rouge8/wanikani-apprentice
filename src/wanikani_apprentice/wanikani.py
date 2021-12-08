@@ -174,6 +174,7 @@ class WaniKaniAPIClient:
             )
 
     async def username(self) -> str:
+        """Get the username of the authenticated user."""
         resp = await self._request("user")
         username: str = resp.json()["data"]["username"]
         return username
