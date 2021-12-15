@@ -32,7 +32,7 @@
         <span class="navbar-brand">WK Apprentice</span>
         <div class="navbar-nav">
           {% if request | is_logged_in %}
-          <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% endif %}
         </div>
       </div>
@@ -41,6 +41,6 @@
     {%block body %}
     {% endblock %}
     <script data-goatcounter="https://wk-apprentice.goatcounter.com/count"
-            async src="//gc.zgo.at/count.js"></script>
+      async src="//gc.zgo.at/count.js"></script>
   </body>
 </html>
