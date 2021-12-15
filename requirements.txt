@@ -54,7 +54,7 @@ markupsafe==2.0.1
     # via jinja2
 pycparser==2.21
     # via cffi
-pygit2==1.7.1
+pygit2==1.7.2
     # via wanikani-apprentice
 python-multipart==0.0.5
     # via wanikani-apprentice
@@ -62,7 +62,7 @@ pytz==2021.3
     # via babel
 rfc3986[idna2008]==1.5.0
     # via httpx
-sentry-sdk==1.5.0
+sentry-sdk==1.5.1
     # via wanikani-apprentice
 six==1.16.0
     # via python-multipart
@@ -77,7 +77,7 @@ structlog==21.4.0
     # via wanikani-apprentice
 urllib3==1.26.7
     # via sentry-sdk
-uvicorn==0.15.0
+uvicorn==0.16.0
     # via wanikani-apprentice
 uvloop==0.16.0
     # via wanikani-apprentice
