@@ -3,7 +3,7 @@ import enum
 import time
 import typing
 
-import attr
+import attrs
 import ciso8601
 import httpx
 import structlog
@@ -28,12 +28,12 @@ class SubjectType(str, enum.Enum):
     VOCABULARY = "vocabulary"
 
 
-@attr.frozen
+@attrs.frozen
 class WaniKaniAPIClient:
     BASE_URL = "https://api.wanikani.com/v2"
 
-    api_key: str = attr.field(repr=False)
-    client: httpx.AsyncClient = attr.field(factory=httpx.AsyncClient)
+    api_key: str = attrs.field(repr=False)
+    client: httpx.AsyncClient = attrs.field(factory=httpx.AsyncClient)
 
     def __attrs_post_init__(self) -> None:
         self.client.headers.update({"Wanikani-Revision": "20170710"})

@@ -1,7 +1,7 @@
 import typing
 
 import anyio
-import attr
+import attrs
 import structlog
 
 from .models import Kanji
@@ -15,11 +15,11 @@ if typing.TYPE_CHECKING:
 log = structlog.get_logger()
 
 
-@attr.frozen
+@attrs.frozen
 class Database:
-    radical: dict[int, Radical] = attr.field(factory=dict)
-    kanji: dict[int, Kanji] = attr.field(factory=dict)
-    vocabulary: dict[int, Vocabulary] = attr.field(factory=dict)
+    radical: dict[int, Radical] = attrs.field(factory=dict)
+    kanji: dict[int, Kanji] = attrs.field(factory=dict)
+    vocabulary: dict[int, Vocabulary] = attrs.field(factory=dict)
 
 
 DB = Database()

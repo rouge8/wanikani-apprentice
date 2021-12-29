@@ -3,7 +3,7 @@ from functools import partial
 import operator
 import os.path
 
-import attr
+import attrs
 import httpx
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
@@ -42,7 +42,7 @@ from .wanikani import WaniKaniAPIClient
 log = structlog.get_logger()
 
 
-@attr.frozen
+@attrs.frozen
 class LBHeartbeatMiddleware:
     app: ASGIApp
 

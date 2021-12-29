@@ -1,6 +1,6 @@
-import attr
+import attrs
 
 
-@attr.frozen
+@attrs.frozen
 class UnknownSubjectError(Exception):
     subject_id: int

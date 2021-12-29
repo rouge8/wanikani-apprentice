@@ -2,11 +2,11 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Union
 
-import attr
+import attrs
 from babel.dates import format_timedelta
 
 
-@attr.frozen
+@attrs.frozen
 class Radical:
     id: int
     document_url: str
@@ -15,7 +15,7 @@ class Radical:
     meanings: list[str]
 
 
-@attr.frozen
+@attrs.frozen
 class Kanji:
     id: int
     document_url: str
@@ -24,7 +24,7 @@ class Kanji:
     readings: list[str]
 
 
-@attr.frozen
+@attrs.frozen
 class Vocabulary:
     id: int
     document_url: str
@@ -36,7 +36,7 @@ class Vocabulary:
 Subject = Union[Radical, Kanji, Vocabulary]
 
 
-@attr.frozen
+@attrs.frozen
 class Assignment:
     subject: Subject
     srs_stage: int

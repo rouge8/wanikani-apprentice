@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterable
 import operator
 
-import attr
+import attrs
 import httpx
 import pytest
 from starlette.testclient import TestClient
@@ -15,13 +15,13 @@ from .factories import RadicalFactory
 from .factories import VocabularyFactory
 
 
-@attr.define(slots=False)
+@attrs.define(slots=False)
 class FakeAPI:
-    api_key: str | None = attr.field(init=False, default=None)
-    client: httpx.AsyncClient | None = attr.field(init=False, default=None)
+    api_key: str | None = attrs.field(init=False, default=None)
+    client: httpx.AsyncClient | None = attrs.field(init=False, default=None)
 
-    _username: str | None = attr.field(init=False, default=None)
-    _assignments: list[Assignment] = attr.field(init=False, factory=list)
+    _username: str | None = attrs.field(init=False, default=None)
+    _assignments: list[Assignment] = attrs.field(init=False, factory=list)
 
     def __call__(self, api_key: str, client: httpx.AsyncClient) -> "FakeAPI":
         self.api_key = api_key
