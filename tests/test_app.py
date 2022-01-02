@@ -67,6 +67,11 @@ class TestLogin:
         assert resp.status_code == 200
         assert resp.template.name == "login.html.j2"
 
+    def test_head(self, test_client):
+        resp = test_client.head("/login")
+        assert resp.status_code == 200
+        assert resp.content == b""
+
     @pytest.mark.parametrize(
         "api_key",
         ["valid-key", "valid-key-with-trailing-whitespace    "],

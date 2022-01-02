@@ -61,7 +61,7 @@ async def index(request: Request) -> RedirectResponse:
         return RedirectResponse(request.url_for("login"))
 
 
-async def login(request: Request) -> _TemplateResponse | RedirectResponse:
+async def login(request: Request) -> _TemplateResponse | RedirectResponse | Response:
     if request.method == "GET":
         if is_logged_in(request):
             return RedirectResponse(request.url_for("assignments"))
@@ -89,6 +89,8 @@ async def login(request: Request) -> _TemplateResponse | RedirectResponse:
 
         request.session[SESSION_API_KEY] = api_key
         return RedirectResponse(request.url_for("assignments"), status_code=303)
+    elif request.method == "HEAD":
+        return Response()
     else:
         raise NotImplementedError
 
