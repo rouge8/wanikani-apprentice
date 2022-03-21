@@ -50,7 +50,7 @@ itsdangerous==2.1.1
     # via wanikani-apprentice
 jinja2==3.0.3
     # via wanikani-apprentice
-markupsafe==2.1.0
+markupsafe==2.1.1
     # via jinja2
 pycparser==2.21
     # via cffi
@@ -58,11 +58,11 @@ pygit2==1.9.0
     # via wanikani-apprentice
 python-multipart==0.0.5
     # via wanikani-apprentice
-pytz==2021.3
+pytz==2022.1
     # via babel
 rfc3986[idna2008]==1.5.0
     # via httpx
-sentry-sdk==1.5.7
+sentry-sdk==1.5.8
     # via wanikani-apprentice
 six==1.16.0
     # via python-multipart
@@ -75,9 +75,9 @@ starlette==0.19.0
     # via wanikani-apprentice
 structlog==21.5.0
     # via wanikani-apprentice
-urllib3==1.26.8
+urllib3==1.26.9
     # via sentry-sdk
-uvicorn==0.17.5
+uvicorn==0.17.6
     # via wanikani-apprentice
 uvloop==0.16.0
     # via wanikani-apprentice
