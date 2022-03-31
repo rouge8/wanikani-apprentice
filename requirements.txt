@@ -28,7 +28,7 @@ charset-normalizer==2.0.12
     # via httpx
 ciso8601==2.2.0
     # via wanikani-apprentice
-click==8.0.4
+click==8.1.1
     # via uvicorn
 gunicorn==20.1.0
     # via wanikani-apprentice
