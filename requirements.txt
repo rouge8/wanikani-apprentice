@@ -11,7 +11,7 @@ anyio==3.5.0
     #   httpcore
     #   starlette
     #   wanikani-apprentice
-asgiref==3.5.0
+asgiref==3.5.1
     # via uvicorn
 attrs==21.4.0
     # via wanikani-apprentice
@@ -28,7 +28,7 @@ charset-normalizer==2.0.12
     # via httpx
 ciso8601==2.2.0
     # via wanikani-apprentice
-click==8.1.2
+click==8.1.3
     # via uvicorn
 gunicorn==20.1.0
     # via wanikani-apprentice
@@ -48,7 +48,7 @@ idna==3.3
     #   rfc3986
 itsdangerous==2.1.2
     # via wanikani-apprentice
-jinja2==3.1.1
+jinja2==3.1.2
     # via wanikani-apprentice
 markupsafe==2.1.1
     # via jinja2

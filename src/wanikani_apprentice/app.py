@@ -157,7 +157,7 @@ async def test_500(request: Request) -> None:
 
 
 def create_app() -> Starlette:
-    sentry_sdk.init(
+    sentry_sdk.init(  # type: ignore [abstract]
         send_default_pii=True,
         release=config.git_revision(),
     )
