@@ -72,7 +72,9 @@ async def login(request: Request) -> _TemplateResponse | RedirectResponse | Resp
             )
     elif request.method == "POST":
         form = await request.form()
-        api_key = form["api_key"].strip()
+        api_key = form["api_key"]
+        assert isinstance(api_key, str)
+        api_key = api_key.strip()
         api = WaniKaniAPIClient(api_key, client=httpx_client)
 
         try:
