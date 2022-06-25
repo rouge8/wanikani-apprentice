@@ -11,13 +11,11 @@ anyio==3.6.1
     #   httpcore
     #   starlette
     #   wanikani-apprentice
-asgiref==3.5.2
-    # via uvicorn
 attrs==21.4.0
     # via wanikani-apprentice
-babel==2.10.1
+babel==2.10.3
     # via wanikani-apprentice
-certifi==2022.5.18.1
+certifi==2022.6.15
     # via
     #   httpcore
     #   httpx
@@ -60,7 +58,7 @@ pytz==2022.1
     # via babel
 rfc3986[idna2008]==1.5.0
     # via httpx
-sentry-sdk==1.5.12
+sentry-sdk==1.6.0
     # via wanikani-apprentice
 six==1.16.0
     # via python-multipart
@@ -75,7 +73,7 @@ structlog==21.5.0
     # via wanikani-apprentice
 urllib3==1.26.9
     # via sentry-sdk
-uvicorn==0.17.6
+uvicorn==0.18.1
     # via wanikani-apprentice
 uvloop==0.16.0
     # via wanikani-apprentice
