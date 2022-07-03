@@ -26,6 +26,7 @@ dependencies = [
   "sentry-sdk",
   "starlette",
   "structlog",
+  "typing_extensions >= 4.1.0",
   "uvicorn",
   "uvloop",
 ]

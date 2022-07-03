@@ -71,6 +71,8 @@ starlette==0.20.4
     # via wanikani-apprentice
 structlog==21.5.0
     # via wanikani-apprentice
+typing-extensions==4.3.0
+    # via wanikani-apprentice
 urllib3==1.26.9
     # via sentry-sdk
 uvicorn==0.18.2

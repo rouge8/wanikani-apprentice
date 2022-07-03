@@ -7,6 +7,7 @@ import attrs
 import ciso8601
 import httpx
 import structlog
+from typing_extensions import assert_never
 
 from .db import DB
 from .errors import UnknownSubjectError
@@ -15,7 +16,6 @@ from .models import Kanji
 from .models import Radical
 from .models import Subject
 from .models import Vocabulary
-from .utils import assert_never
 
 log = structlog.get_logger()
 

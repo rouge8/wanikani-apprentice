@@ -24,6 +24,7 @@ from starlette.types import Receive
 from starlette.types import Scope
 from starlette.types import Send
 import structlog
+from typing_extensions import assert_never
 
 from . import config
 from .constants import BS_PRIMARY_COLOR
@@ -35,7 +36,6 @@ from .models import Radical
 from .models import Vocabulary
 from .resources import httpx_client
 from .resources import templates
-from .utils import assert_never
 from .utils import is_logged_in
 from .wanikani import WaniKaniAPIClient
 
