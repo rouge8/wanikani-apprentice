@@ -20,5 +20,8 @@ async fn main() -> reqwest::Result<()> {
     let radicals = client.radicals().await?;
     println!("There are {} radicals.", radicals.len());
 
+    let kanji = client.kanji().await?;
+    println!("There are {} kanji.", kanji.len());
+
     Ok(())
 }

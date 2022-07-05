@@ -1,21 +1,23 @@
-use crate::models::Radical;
+use crate::models::{Kanji, Radical};
 use serde_json::Value;
 use std::collections::HashMap;
 
 pub struct WaniKaniAPIClient {
-    base_url: String,
+    pub base_url: String,
     api_key: String,
     client: reqwest::Client,
 }
 
 enum SubjectType {
     Radical,
+    Kanji,
 }
 
 impl ToString for SubjectType {
     fn to_string(&self) -> String {
         match self {
             SubjectType::Radical => "radical".to_string(),
+            SubjectType::Kanji => "kanji".to_string(),
         }
     }
 }
@@ -123,7 +125,45 @@ impl WaniKaniAPIClient {
                         }
                     })
                     .collect(),
-            })
+            });
+        }
+
+        Ok(results)
+    }
+
+    pub async fn kanji(&self) -> reqwest::Result<Vec<Kanji>> {
+        let mut results = Vec::new();
+
+        for kanji in self.subjects(SubjectType::Kanji).await? {
+            results.push(Kanji {
+                id: kanji["id"].as_u64().unwrap(),
+                document_url: kanji["data"]["document_url"].as_str().unwrap().to_string(),
+                characters: kanji["data"]["characters"].as_str().unwrap().to_string(),
+                meanings: kanji["data"]["meanings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(|meaning| {
+                        if meaning["accepted_answer"].as_bool().unwrap() {
+                            Some(meaning["meaning"].as_str().unwrap().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+                readings: kanji["data"]["readings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(|reading| {
+                        if reading["accepted_answer"].as_bool().unwrap() {
+                            Some(reading["reading"].as_str().unwrap().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            });
         }
 
         Ok(results)
@@ -290,6 +330,127 @@ mod tests {
                 character_svg_path: Some("the-good-path".to_string()),
                 meanings: vec!["before".to_string()],
             },]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_kanji() -> reqwest::Result<()> {
+        let client = WaniKaniAPIClient::new("fake-api-key");
+
+        let _page1 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "kanji".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 1,
+                            "object": "kanji",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/kanji/a",
+                                "characters": "a",
+                                "meanings": [
+                                    {"meaning": "a1", "primary": true, "accepted_answer": true},
+                                    {"meaning": "a2", "primary": false, "accepted_answer": false},
+                                    {"meaning": "a3", "primary": false, "accepted_answer": true},
+                                ],
+                                "readings": [
+                                    {
+                                        "type": "type1",
+                                        "primary": true,
+                                        "reading": "a",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type1",
+                                        "primary": false,
+                                        "reading": "b",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type2",
+                                        "primary": false,
+                                        "reading": "c",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type2",
+                                        "primary": false,
+                                        "reading": "d",
+                                        "accepted_answer": false,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": format!("{}/subjects?types=kanji&hidden=false&page_after_id=1", client.base_url),
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+        let _page2 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "kanji".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+                Matcher::UrlEncoded("page_after_id".into(), "1".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 2,
+                            "object": "kanji",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/kanji/b",
+                                "characters": "b",
+                                "meanings": [
+                                    {"meaning": "b", "primary": true, "accepted_answer": true},
+                                ],
+                                "readings": [
+                                    {
+                                        "type": "type1",
+                                        "primary": true,
+                                        "reading": "b",
+                                        "accepted_answer": true,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": None::<String>,
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+
+        assert_eq!(
+            client.kanji().await?,
+            vec![
+                Kanji {
+                    id: 1,
+                    document_url: "https://www.wanikani.com/kanji/a".to_string(),
+                    characters: "a".to_string(),
+                    meanings: vec!["a1".to_string(), "a3".to_string()],
+                    readings: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+                },
+                Kanji {
+                    id: 2,
+                    document_url: "https://www.wanikani.com/kanji/b".to_string(),
+                    characters: "b".to_string(),
+                    meanings: vec!["b".to_string()],
+                    readings: vec!["b".to_string()],
+                },
+            ]
         );
 
         Ok(())
