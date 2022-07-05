@@ -11,71 +11,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  tox:
-    name: ${{ matrix.toxenv }}
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
-    env:
-      TOXENV: ${{ matrix.toxenv }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        toxenv:
-          - py310
-          - lint
-          - mypy
-
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions-rs/toolchain@v1
         with:
-          python-version: "3.10"
-      - name: Generate the cache suffix
-        id: cache-suffix
-        run: |
-          echo ::set-output name=cache-suffix::${TOXENV//,/-}
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/pre-commit
-            .mypy_cache
-          key: ${{ runner.os }}-pip-${{ steps.cache-suffix.outputs.cache-suffix }}
-      - name: Install dependencies
-        run: |
-          set -xe
-          python -VV
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade virtualenv tox
-      - name: tox
-        run: python -m tox
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --no-fail-fast
 
-  pip-compile:
-    name: pip-compile
+  pre-commit:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions-rs/toolchain@v1
         with:
-          python-version: "3.10"
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-compile
-      - name: Install dependencies
-        run: |
-          set -xe
-          python -VV
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade virtualenv tox
-      - name: tox
-        # Verify requirements.txt is up to date
-        run: python -m tox -e pip-compile && git diff --exit-code
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy, rustfmt
+      - uses: actions/setup-python@v3
+      - uses: pre-commit/action@v3.0.0
 
   deploy:
     name: Deploy
-    needs: [tox, pip-compile]
+    needs:
+      - build-and-test
+      - pre-commit
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:

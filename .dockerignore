@@ -1,16 +1,5 @@
-# Python
-*.pyc
-__pycache__
-
-# Config
-.env
-
-# Tests
-tests/
-htmlcov
-.coverage
-.tox
-.mypy_cache
+# Rust
+/target
 
 # Misc
 .github/
