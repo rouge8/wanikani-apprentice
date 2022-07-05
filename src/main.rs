@@ -3,6 +3,7 @@ use dotenvy::dotenv;
 use wanikani::WaniKaniAPIClient;
 
 mod config;
+mod models;
 mod wanikani;
 
 #[tokio::main]
@@ -15,6 +16,9 @@ async fn main() -> reqwest::Result<()> {
 
     let username = client.username().await?;
     println!("Welcome, {username}!");
+
+    let radicals = client.radicals().await?;
+    println!("There are {} radicals.", radicals.len());
 
     Ok(())
 }
