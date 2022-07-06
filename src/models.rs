@@ -1,4 +1,13 @@
-#[derive(Debug, PartialEq, Eq)]
+use chrono::{DateTime, FixedOffset};
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Subject {
+    Radical(Radical),
+    Kanji(Kanji),
+    Vocabulary(Vocabulary),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Radical {
     pub id: u64,
     pub document_url: String,
@@ -7,7 +16,7 @@ pub struct Radical {
     pub meanings: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Kanji {
     pub id: u64,
     pub document_url: String,
@@ -16,11 +25,18 @@ pub struct Kanji {
     pub readings: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Vocabulary {
     pub id: u64,
     pub document_url: String,
     pub characters: String,
     pub meanings: Vec<String>,
     pub readings: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Assignment {
+    pub subject: Subject,
+    pub srs_stage: u64,
+    pub available_at: DateTime<FixedOffset>,
 }

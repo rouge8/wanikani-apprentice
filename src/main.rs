@@ -26,5 +26,8 @@ async fn main() -> reqwest::Result<()> {
     let mut db = Database::new();
     db.populate(&client).await?;
 
+    let assignments = client.assignments(&db).await?;
+    println!("You have {} assignments.", assignments.len());
+
     Ok(())
 }

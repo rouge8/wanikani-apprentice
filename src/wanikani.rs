@@ -1,4 +1,6 @@
-use crate::models::{Kanji, Radical, Vocabulary};
+use crate::db::Database;
+use crate::models::{Assignment, Kanji, Radical, Subject, Vocabulary};
+use chrono::DateTime;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -25,6 +27,8 @@ impl ToString for SubjectType {
         }
     }
 }
+
+const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
 
 impl WaniKaniAPIClient {
     pub fn new(api_key: &str) -> Self {
@@ -216,6 +220,48 @@ impl WaniKaniAPIClient {
                     })
                     .collect(),
             });
+        }
+
+        Ok(results)
+    }
+
+    pub async fn assignments(&self, db: &Database) -> reqwest::Result<Vec<Assignment>> {
+        let mut results = Vec::new();
+
+        let apprentice_srs_stages = APPRENTICE_SRS_STAGES
+            .map(|stage| stage.to_string())
+            .join(",");
+        let params = HashMap::from([
+            ("srs_stages", apprentice_srs_stages.as_str()),
+            ("hidden", "false"),
+        ]);
+        // TODO: Handle possible (but unlikely) pagination
+        let resp: Value = self
+            .request("assignments", Some(&params))
+            .await?
+            .json()
+            .await?;
+
+        for assignment in resp["data"].as_array().unwrap() {
+            let subject_id = assignment["data"]["subject_id"].as_u64().unwrap();
+            let subject_type = assignment["data"]["subject_type"].as_str().unwrap();
+
+            // TODO: UnknownSubjectError
+            let subject = match subject_type {
+                "radical" => Subject::Radical(db.radical[&subject_id].clone()),
+                "kanji" => Subject::Kanji(db.kanji[&subject_id].clone()),
+                "vocabulary" => Subject::Vocabulary(db.vocabulary[&subject_id].clone()),
+                _ => unreachable!(),
+            };
+
+            results.push(Assignment {
+                subject,
+                srs_stage: assignment["data"]["srs_stage"].as_u64().unwrap(),
+                available_at: DateTime::parse_from_rfc3339(
+                    assignment["data"]["available_at"].as_str().unwrap(),
+                )
+                .unwrap(),
+            })
         }
 
         Ok(results)
@@ -622,6 +668,108 @@ mod tests {
                     characters: "b".to_string(),
                     meanings: vec!["b".to_string()],
                     readings: vec!["b".to_string()],
+                },
+            ]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_assignments() -> reqwest::Result<()> {
+        let _m = mock("GET", "/assignments")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 1,
+                            "object": "assignment",
+                            "data": {
+                                "subject_id": 1,
+                                "subject_type": "radical",
+                                "srs_stage": 1,
+                                "available_at": "2022-07-11T16:00:00.000000Z",
+                            },
+                        },
+                        {
+                            "id": 2,
+                            "object": "assignment",
+                            "data": {
+                                "subject_id": 2,
+                                "subject_type": "kanji",
+                                "srs_stage": 2,
+                                "available_at": "2022-07-16T21:00:00.000000Z",
+                            },
+                        },
+                        {
+                            "id": 3,
+                            "object": "assignment",
+                            "data": {
+                                "subject_id": 3,
+                                "subject_type": "vocabulary",
+                                "srs_stage": 3,
+                                "available_at": "2022-07-15T14:00:00.000000Z",
+                            },
+                        },
+                    ],
+                })
+                .to_string(),
+            )
+            .create();
+
+        let radical = Radical {
+            id: 1,
+            document_url: "https://www.wanikani.com/radicals/before".to_string(),
+            characters: Some("前".to_string()),
+            character_svg_path: None,
+            meanings: vec!["before".to_string()],
+        };
+        let kanji = Kanji {
+            id: 2,
+            document_url: "https://www.wanikani.com/kanji/a".to_string(),
+            characters: "a".to_string(),
+            meanings: vec!["a".to_string()],
+            readings: vec!["a".to_string()],
+        };
+        let vocabulary = Vocabulary {
+            id: 3,
+            document_url: "https://www.wanikani.com/vocabulary/魚".to_string(),
+            characters: "魚".to_string(),
+            meanings: vec!["fish".to_string()],
+            readings: vec!["さかな".to_string()],
+        };
+        let mut db = Database::new();
+        db.radical.insert(1, radical.clone());
+        db.kanji.insert(2, kanji.clone());
+        db.vocabulary.insert(3, vocabulary.clone());
+
+        let client = WaniKaniAPIClient::new("fake-api-key");
+
+        assert_eq!(
+            client.assignments(&db).await?,
+            vec![
+                Assignment {
+                    subject: Subject::Radical(radical),
+                    srs_stage: 1,
+                    available_at: DateTime::parse_from_rfc3339("2022-07-11T16:00:00.000000Z")
+                        .unwrap(),
+                },
+                Assignment {
+                    subject: Subject::Kanji(kanji),
+                    srs_stage: 2,
+                    available_at: DateTime::parse_from_rfc3339("2022-07-16T21:00:00.000000Z")
+                        .unwrap(),
+                },
+                Assignment {
+                    subject: Subject::Vocabulary(vocabulary),
+                    srs_stage: 3,
+                    available_at: DateTime::parse_from_rfc3339("2022-07-15T14:00:00.000000Z")
+                        .unwrap(),
                 },
             ]
         );
