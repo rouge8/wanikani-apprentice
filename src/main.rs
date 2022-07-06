@@ -1,9 +1,11 @@
 use config::Config;
+use db::Database;
 use dotenvy::dotenv;
 use tracing_subscriber::FmtSubscriber;
 use wanikani::WaniKaniAPIClient;
 
 mod config;
+mod db;
 mod models;
 mod wanikani;
 
@@ -21,14 +23,8 @@ async fn main() -> reqwest::Result<()> {
     let username = client.username().await?;
     println!("Welcome, {username}!");
 
-    let radicals = client.radicals().await?;
-    println!("There are {} radicals.", radicals.len());
-
-    let kanji = client.kanji().await?;
-    println!("There are {} kanji.", kanji.len());
-
-    let vocabulary = client.vocabulary().await?;
-    println!("There are {} vocabulary.", vocabulary.len());
+    let mut db = Database::new();
+    db.populate(&client).await?;
 
     Ok(())
 }
