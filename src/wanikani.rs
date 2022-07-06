@@ -1,6 +1,8 @@
 use crate::models::{Kanji, Radical, Vocabulary};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::time::Instant;
+use tracing::info;
 
 pub struct WaniKaniAPIClient {
     pub base_url: String,
@@ -44,6 +46,8 @@ impl WaniKaniAPIClient {
         path: &str,
         params: Option<&HashMap<&str, &str>>,
     ) -> reqwest::Result<reqwest::Response> {
+        info!(path, params = ?params, "requesting");
+        let start = Instant::now();
         let resp = self
             .client
             .get(format!("{}/{path}", self.base_url))
@@ -52,6 +56,14 @@ impl WaniKaniAPIClient {
             .bearer_auth(&self.api_key)
             .send()
             .await?;
+        let end = start.elapsed();
+        info!(
+            path,
+            params = ?params,
+            status_code = resp.status().as_u16(),
+            duration = end.as_secs_f32(),
+            "requested",
+        );
 
         resp.error_for_status()
     }

@@ -1,5 +1,6 @@
 use config::Config;
 use dotenvy::dotenv;
+use tracing_subscriber::FmtSubscriber;
 use wanikani::WaniKaniAPIClient;
 
 mod config;
@@ -9,6 +10,9 @@ mod wanikani;
 #[tokio::main]
 async fn main() -> reqwest::Result<()> {
     dotenv().ok();
+
+    let subscriber = FmtSubscriber::builder().finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     let config = Config::from_env();
 
