@@ -15,3 +15,12 @@ pub struct Kanji {
     pub meanings: Vec<String>,
     pub readings: Vec<String>,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Vocabulary {
+    pub id: u64,
+    pub document_url: String,
+    pub characters: String,
+    pub meanings: Vec<String>,
+    pub readings: Vec<String>,
+}

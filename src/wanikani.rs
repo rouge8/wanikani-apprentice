@@ -1,4 +1,4 @@
-use crate::models::{Kanji, Radical};
+use crate::models::{Kanji, Radical, Vocabulary};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -11,6 +11,7 @@ pub struct WaniKaniAPIClient {
 enum SubjectType {
     Radical,
     Kanji,
+    Vocabulary,
 }
 
 impl ToString for SubjectType {
@@ -18,6 +19,7 @@ impl ToString for SubjectType {
         match self {
             SubjectType::Radical => "radical".to_string(),
             SubjectType::Kanji => "kanji".to_string(),
+            SubjectType::Vocabulary => "vocabulary".to_string(),
         }
     }
 }
@@ -152,6 +154,44 @@ impl WaniKaniAPIClient {
                     })
                     .collect(),
                 readings: kanji["data"]["readings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(|reading| {
+                        if reading["accepted_answer"].as_bool().unwrap() {
+                            Some(reading["reading"].as_str().unwrap().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            });
+        }
+
+        Ok(results)
+    }
+
+    pub async fn vocabulary(&self) -> reqwest::Result<Vec<Vocabulary>> {
+        let mut results = Vec::new();
+
+        for vocab in self.subjects(SubjectType::Vocabulary).await? {
+            results.push(Vocabulary {
+                id: vocab["id"].as_u64().unwrap(),
+                document_url: vocab["data"]["document_url"].as_str().unwrap().to_string(),
+                characters: vocab["data"]["characters"].as_str().unwrap().to_string(),
+                meanings: vocab["data"]["meanings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(|meaning| {
+                        if meaning["accepted_answer"].as_bool().unwrap() {
+                            Some(meaning["meaning"].as_str().unwrap().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+                readings: vocab["data"]["readings"]
                     .as_array()
                     .unwrap()
                     .iter()
@@ -446,6 +486,127 @@ mod tests {
                 Kanji {
                     id: 2,
                     document_url: "https://www.wanikani.com/kanji/b".to_string(),
+                    characters: "b".to_string(),
+                    meanings: vec!["b".to_string()],
+                    readings: vec!["b".to_string()],
+                },
+            ]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_vocabulary() -> reqwest::Result<()> {
+        let client = WaniKaniAPIClient::new("fake-api-key");
+
+        let _page1 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "vocabulary".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 1,
+                            "object": "vocabulary",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/vocabulary/a",
+                                "characters": "a",
+                                "meanings": [
+                                    {"meaning": "a1", "primary": true, "accepted_answer": true},
+                                    {"meaning": "a2", "primary": false, "accepted_answer": false},
+                                    {"meaning": "a3", "primary": false, "accepted_answer": true},
+                                ],
+                                "readings": [
+                                    {
+                                        "type": "type1",
+                                        "primary": true,
+                                        "reading": "a",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type1",
+                                        "primary": false,
+                                        "reading": "b",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type2",
+                                        "primary": false,
+                                        "reading": "c",
+                                        "accepted_answer": true,
+                                    },
+                                    {
+                                        "type": "type2",
+                                        "primary": false,
+                                        "reading": "d",
+                                        "accepted_answer": false,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": format!("{}/subjects?types=vocabulary&hidden=false&page_after_id=1", client.base_url),
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+        let _page2 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "vocabulary".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+                Matcher::UrlEncoded("page_after_id".into(), "1".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 2,
+                            "object": "vocabulary",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/vocabulary/b",
+                                "characters": "b",
+                                "meanings": [
+                                    {"meaning": "b", "primary": true, "accepted_answer": true},
+                                ],
+                                "readings": [
+                                    {
+                                        "type": "type1",
+                                        "primary": true,
+                                        "reading": "b",
+                                        "accepted_answer": true,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": None::<String>,
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+
+        assert_eq!(
+            client.vocabulary().await?,
+            vec![
+                Vocabulary {
+                    id: 1,
+                    document_url: "https://www.wanikani.com/vocabulary/a".to_string(),
+                    characters: "a".to_string(),
+                    meanings: vec!["a1".to_string(), "a3".to_string()],
+                    readings: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+                },
+                Vocabulary {
+                    id: 2,
+                    document_url: "https://www.wanikani.com/vocabulary/b".to_string(),
                     characters: "b".to_string(),
                     meanings: vec!["b".to_string()],
                     readings: vec!["b".to_string()],

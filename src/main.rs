@@ -23,5 +23,8 @@ async fn main() -> reqwest::Result<()> {
     let kanji = client.kanji().await?;
     println!("There are {} kanji.", kanji.len());
 
+    let vocabulary = client.vocabulary().await?;
+    println!("There are {} vocabulary.", vocabulary.len());
+
     Ok(())
 }
