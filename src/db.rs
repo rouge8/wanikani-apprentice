@@ -25,16 +25,12 @@ impl Database {
             Self::populate_radicals(api),
             Self::populate_kanji(api),
             Self::populate_vocabulary(api),
-        );
+        )?;
 
-        match result {
-            Ok((radicals, kanji, vocabulary)) => {
-                self.radical.extend(radicals);
-                self.kanji.extend(kanji);
-                self.vocabulary.extend(vocabulary);
-            }
-            Err(err) => return Err(err),
-        }
+        let (radicals, kanji, vocabulary) = result;
+        self.radical.extend(radicals);
+        self.kanji.extend(kanji);
+        self.vocabulary.extend(vocabulary);
 
         Ok(())
     }
