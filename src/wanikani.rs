@@ -31,7 +31,7 @@ impl ToString for SubjectType {
 const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
 
 impl WaniKaniAPIClient {
-    pub fn new(api_key: &str) -> Self {
+    pub fn new(api_key: &str, client: reqwest::Client) -> Self {
         #[cfg(not(test))]
         let base_url = "https://api.wanikani.com/v2".to_string();
 
@@ -41,7 +41,7 @@ impl WaniKaniAPIClient {
         Self {
             base_url,
             api_key: api_key.to_string(),
-            client: reqwest::Client::new(),
+            client,
         }
     }
 
@@ -279,24 +279,30 @@ mod tests {
     use super::*;
     use mockito::{mock, Matcher};
     use pretty_assertions::assert_eq;
+    use rstest::{fixture, rstest};
     use serde_json::json;
 
+    #[fixture]
+    fn client() -> WaniKaniAPIClient {
+        WaniKaniAPIClient::new("fake-api-key", reqwest::Client::new())
+    }
+
+    #[rstest]
     #[tokio::test]
-    async fn test_username() -> reqwest::Result<()> {
+    async fn test_username(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _m = mock("GET", "/user")
             .with_status(200)
             .with_body(r#"{"data": {"username": "test-user"}}"#)
             .create();
-
-        let client = WaniKaniAPIClient::new("fake-api-key");
 
         assert_eq!(client.username().await?, "test-user");
 
         Ok(())
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_radicals() -> reqwest::Result<()> {
+    async fn test_radicals(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _m = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
@@ -341,8 +347,6 @@ mod tests {
             )
             .create();
 
-        let client = WaniKaniAPIClient::new("fake-api-key");
-
         assert_eq!(
             client.radicals().await?,
             vec![
@@ -366,8 +370,9 @@ mod tests {
         Ok(())
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_radicals_with_character_images() -> reqwest::Result<()> {
+    async fn test_radicals_with_character_images(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _m = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
@@ -417,8 +422,6 @@ mod tests {
             )
             .create();
 
-        let client = WaniKaniAPIClient::new("fake-api-key");
-
         assert_eq!(
             client.radicals().await?,
             vec![Radical {
@@ -433,10 +436,9 @@ mod tests {
         Ok(())
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_kanji() -> reqwest::Result<()> {
-        let client = WaniKaniAPIClient::new("fake-api-key");
-
+    async fn test_kanji(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _page1 = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
@@ -554,10 +556,9 @@ mod tests {
         Ok(())
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_vocabulary() -> reqwest::Result<()> {
-        let client = WaniKaniAPIClient::new("fake-api-key");
-
+    async fn test_vocabulary(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _page1 = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
@@ -675,8 +676,9 @@ mod tests {
         Ok(())
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_assignments() -> reqwest::Result<()> {
+    async fn test_assignments(client: WaniKaniAPIClient) -> reqwest::Result<()> {
         let _m = mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
@@ -747,8 +749,6 @@ mod tests {
         db.radical.insert(1, radical.clone());
         db.kanji.insert(2, kanji.clone());
         db.vocabulary.insert(3, vocabulary.clone());
-
-        let client = WaniKaniAPIClient::new("fake-api-key");
 
         assert_eq!(
             client.assignments(&db).await?,

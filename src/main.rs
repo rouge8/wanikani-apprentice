@@ -18,7 +18,7 @@ async fn main() -> reqwest::Result<()> {
 
     let config = Config::from_env();
 
-    let client = WaniKaniAPIClient::new(&config.wanikani_api_key);
+    let client = WaniKaniAPIClient::new(&config.wanikani_api_key, reqwest::Client::new());
 
     let username = client.username().await?;
     println!("Welcome, {username}!");
