@@ -22,9 +22,9 @@ impl Database {
 
     pub async fn populate(&mut self, api: &WaniKaniAPIClient) -> reqwest::Result<()> {
         let result = tokio::try_join!(
-            Self::populate_radicals(api),
-            Self::populate_kanji(api),
-            Self::populate_vocabulary(api),
+            Self::get_radicals(api),
+            Self::get_kanji(api),
+            Self::get_vocabulary(api),
         )?;
 
         let (radicals, kanji, vocabulary) = result;
@@ -35,7 +35,7 @@ impl Database {
         Ok(())
     }
 
-    async fn populate_radicals(api: &WaniKaniAPIClient) -> reqwest::Result<HashMap<u64, Radical>> {
+    async fn get_radicals(api: &WaniKaniAPIClient) -> reqwest::Result<HashMap<u64, Radical>> {
         let mut result = HashMap::new();
 
         for radical in api.radicals().await? {
@@ -46,7 +46,7 @@ impl Database {
         Ok(result)
     }
 
-    async fn populate_kanji(api: &WaniKaniAPIClient) -> reqwest::Result<HashMap<u64, Kanji>> {
+    async fn get_kanji(api: &WaniKaniAPIClient) -> reqwest::Result<HashMap<u64, Kanji>> {
         let mut result = HashMap::new();
 
         for kanji in api.kanji().await? {
@@ -57,9 +57,7 @@ impl Database {
         Ok(result)
     }
 
-    async fn populate_vocabulary(
-        api: &WaniKaniAPIClient,
-    ) -> reqwest::Result<HashMap<u64, Vocabulary>> {
+    async fn get_vocabulary(api: &WaniKaniAPIClient) -> reqwest::Result<HashMap<u64, Vocabulary>> {
         let mut result = HashMap::new();
 
         for vocabulary in api.vocabulary().await? {
