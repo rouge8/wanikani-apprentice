@@ -146,23 +146,6 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_lb_heartbeat(app: Router) {
-        let resp = app
-            .oneshot(
-                Request::get("/__lbheartbeat__")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
-        assert_eq!(body, "OK");
-    }
-
-    #[rstest]
-    #[tokio::test]
     async fn test_radical_svg(app: Router) {
         let _m = mock("GET", "/foo")
             .with_status(200)
@@ -191,5 +174,22 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_lb_heartbeat(app: Router) {
+        let resp = app
+            .oneshot(
+                Request::get("/__lbheartbeat__")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+        assert_eq!(body, "OK");
     }
 }
