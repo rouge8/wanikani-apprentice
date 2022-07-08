@@ -66,16 +66,21 @@ async fn main() -> reqwest::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::StatusCode;
-    use axum_test_helper::TestClient;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
     use pretty_assertions::assert_eq;
+    use tower::ServiceExt;
 
     #[tokio::test]
     async fn test_500() {
         let app = create_app();
-        let test_client = TestClient::new(app);
 
-        let resp = test_client.get("/test-500").send().await;
+        let resp = app
+            .oneshot(Request::get("/test-500").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }
