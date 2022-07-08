@@ -1,4 +1,11 @@
-use axum::{routing::get, Router};
+use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+    routing::get,
+    Router,
+};
 use config::Config;
 use db::Database;
 use dotenvy::dotenv;
@@ -15,22 +22,41 @@ mod db;
 mod models;
 mod wanikani;
 
+async fn lb_heartbeat_middleware<B>(
+    req: Request<B>,
+    next: Next<B>,
+) -> Result<Response, StatusCode> {
+    let path = req.uri().path();
+
+    if path == "/__lbheartbeat__" {
+        Ok(Response::builder()
+            .body(Body::from("OK"))
+            .unwrap()
+            .into_response())
+    } else {
+        Ok(next.run(req).await)
+    }
+}
+
 async fn test_500() {
     let _ = 1 / 0;
 }
 
 fn create_app() -> Router {
     Router::new().route("/test-500", get(test_500)).layer(
-        ServiceBuilder::new().layer(CatchPanicLayer::new()).layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
-                .on_request(DefaultOnRequest::new().level(Level::INFO))
-                .on_response(
-                    DefaultOnResponse::new()
-                        .level(Level::INFO)
-                        .latency_unit(tower_http::LatencyUnit::Seconds),
-                ),
-        ),
+        ServiceBuilder::new()
+            .layer(CatchPanicLayer::new())
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                    .on_request(DefaultOnRequest::new().level(Level::INFO))
+                    .on_response(
+                        DefaultOnResponse::new()
+                            .level(Level::INFO)
+                            .latency_unit(tower_http::LatencyUnit::Seconds),
+                    ),
+            )
+            .layer(middleware::from_fn(lb_heartbeat_middleware)),
     )
 }
 
@@ -72,6 +98,24 @@ mod tests {
     };
     use pretty_assertions::assert_eq;
     use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn test_lb_heartbeat() {
+        let app = create_app();
+
+        let resp = app
+            .oneshot(
+                Request::get("/__lbheartbeat__")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+        assert_eq!(body, "OK");
+    }
 
     #[tokio::test]
     async fn test_500() {
