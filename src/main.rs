@@ -1,15 +1,16 @@
 use axum::{
     body::Body,
-    http::{Request, StatusCode},
+    extract::Path,
+    http::{header, HeaderMap, Request, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::get,
-    Router,
+    Extension, Router,
 };
 use config::Config;
 use db::Database;
 use dotenvy::dotenv;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
@@ -38,26 +39,61 @@ async fn lb_heartbeat_middleware<B>(
     }
 }
 
+/// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
+async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
+    #[cfg(not(test))]
+    let base_url = "https://files.wanikani.com";
+    #[cfg(test)]
+    let base_url = mockito::server_url();
+
+    let url = format!("{base_url}/{path}");
+    info!(url, "downloading SVG");
+    let resp = state
+        .http_client
+        .get(url)
+        .send()
+        .await
+        .expect("failed to request SVG");
+    resp.error_for_status_ref().expect("failed to download SVG");
+    // TODO: Replace '"stroke:#000"' with 'stroke:{BS_PRIMARY_COLOR}'
+    let svg = resp.text().await.expect("failed to decode SVG");
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
+
+    (headers, svg)
+}
+
 async fn test_500() {
     let _ = 1 / 0;
 }
 
-fn create_app() -> Router {
-    Router::new().route("/test-500", get(test_500)).layer(
-        ServiceBuilder::new()
-            .layer(CatchPanicLayer::new())
-            .layer(
-                TraceLayer::new_for_http()
-                    .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
-                    .on_request(DefaultOnRequest::new().level(Level::INFO))
-                    .on_response(
-                        DefaultOnResponse::new()
-                            .level(Level::INFO)
-                            .latency_unit(tower_http::LatencyUnit::Seconds),
-                    ),
-            )
-            .layer(middleware::from_fn(lb_heartbeat_middleware)),
-    )
+struct State {
+    http_client: reqwest::Client,
+}
+
+fn create_app(http_client: reqwest::Client) -> Router {
+    let state = Arc::new(State { http_client });
+
+    Router::new()
+        .route("/test-500", get(test_500))
+        .route("/radical-svg/:path", get(radical_svg))
+        .layer(
+            ServiceBuilder::new()
+                .layer(CatchPanicLayer::new())
+                .layer(
+                    TraceLayer::new_for_http()
+                        .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                        .on_request(DefaultOnRequest::new().level(Level::INFO))
+                        .on_response(
+                            DefaultOnResponse::new()
+                                .level(Level::INFO)
+                                .latency_unit(tower_http::LatencyUnit::Seconds),
+                        ),
+                )
+                .layer(middleware::from_fn(lb_heartbeat_middleware))
+                .layer(Extension(state)),
+        )
 }
 
 #[tokio::main]
@@ -67,16 +103,18 @@ async fn main() -> reqwest::Result<()> {
     let subscriber = FmtSubscriber::builder().finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
+    let http_client = reqwest::Client::new();
+
     let config = Config::from_env();
 
-    let api = WaniKaniAPIClient::new(&config.wanikani_api_key, reqwest::Client::new());
+    let api = WaniKaniAPIClient::new(&config.wanikani_api_key, &http_client);
 
     // Load the WaniKani data
     let mut db = Database::new();
     db.populate(&api).await?;
 
     // Build the application
-    let app = create_app();
+    let app = create_app(http_client);
 
     // Serve the app
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -96,13 +134,19 @@ mod tests {
         body::Body,
         http::{Request, StatusCode},
     };
+    use mockito::mock;
     use pretty_assertions::assert_eq;
+    use rstest::{fixture, rstest};
     use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn test_lb_heartbeat() {
-        let app = create_app();
+    #[fixture]
+    fn app() -> Router {
+        create_app(reqwest::Client::new())
+    }
 
+    #[rstest]
+    #[tokio::test]
+    async fn test_lb_heartbeat(app: Router) {
         let resp = app
             .oneshot(
                 Request::get("/__lbheartbeat__")
@@ -117,10 +161,31 @@ mod tests {
         assert_eq!(body, "OK");
     }
 
+    #[rstest]
     #[tokio::test]
-    async fn test_500() {
-        let app = create_app();
+    async fn test_radical_svg(app: Router) {
+        let _m = mock("GET", "/foo")
+            .with_status(200)
+            .with_body("foo bar stroke:#000 other:#000")
+            .create();
 
+        let resp = app
+            .oneshot(
+                Request::get("/radical-svg/foo")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+        assert_eq!(body, "foo bar stroke:#000 other:#000");
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_500(app: Router) {
         let resp = app
             .oneshot(Request::get("/test-500").body(Body::empty()).unwrap())
             .await

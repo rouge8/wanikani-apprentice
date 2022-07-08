@@ -6,10 +6,10 @@ use std::collections::HashMap;
 use std::time::Instant;
 use tracing::info;
 
-pub struct WaniKaniAPIClient {
+pub struct WaniKaniAPIClient<'a> {
     pub base_url: String,
     api_key: String,
-    client: reqwest::Client,
+    client: &'a reqwest::Client,
 }
 
 enum SubjectType {
@@ -30,8 +30,8 @@ impl ToString for SubjectType {
 
 const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
 
-impl WaniKaniAPIClient {
-    pub fn new(api_key: &str, client: reqwest::Client) -> Self {
+impl<'a> WaniKaniAPIClient<'a> {
+    pub fn new(api_key: &str, client: &'a reqwest::Client) -> Self {
         #[cfg(not(test))]
         let base_url = "https://api.wanikani.com/v2".to_string();
 
@@ -278,18 +278,24 @@ impl WaniKaniAPIClient {
 mod tests {
     use super::*;
     use mockito::{mock, Matcher};
+    use once_cell::sync::OnceCell;
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
     use serde_json::json;
 
+    static HTTP_CLIENT: OnceCell<reqwest::Client> = OnceCell::new();
+
     #[fixture]
-    fn client() -> WaniKaniAPIClient {
-        WaniKaniAPIClient::new("fake-api-key", reqwest::Client::new())
+    fn client() -> WaniKaniAPIClient<'static> {
+        WaniKaniAPIClient::new(
+            "fake-api-key",
+            HTTP_CLIENT.get_or_init(reqwest::Client::new),
+        )
     }
 
     #[rstest]
     #[tokio::test]
-    async fn test_username(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_username(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
         let _m = mock("GET", "/user")
             .with_status(200)
             .with_body(r#"{"data": {"username": "test-user"}}"#)
@@ -302,7 +308,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_radicals(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_radicals(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
         let _m = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
@@ -372,7 +378,9 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_radicals_with_character_images(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_radicals_with_character_images(
+        client: WaniKaniAPIClient<'_>,
+    ) -> reqwest::Result<()> {
         let _m = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
@@ -438,7 +446,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_kanji(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_kanji(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
         let _page1 = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
@@ -558,7 +566,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_vocabulary(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_vocabulary(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
         let _page1 = mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
@@ -678,7 +686,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_assignments(client: WaniKaniAPIClient) -> reqwest::Result<()> {
+    async fn test_assignments(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
         let _m = mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),

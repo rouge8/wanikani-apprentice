@@ -1403,6 +1403,7 @@ dependencies = [
  "dotenvy",
  "hyper",
  "mockito",
+ "once_cell",
  "pretty_assertions",
  "reqwest",
  "rstest",
