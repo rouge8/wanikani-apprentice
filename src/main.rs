@@ -69,6 +69,12 @@ async fn login_post(
     }
 }
 
+async fn logout(jar: PrivateCookieJar) -> (PrivateCookieJar, Redirect) {
+    let updated_jar = jar.remove(Cookie::named(COOKIE_NAME));
+
+    (updated_jar, Redirect::to("/login"))
+}
+
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
 async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
     #[cfg(not(test))]
@@ -135,6 +141,7 @@ fn create_app(config: Config, http_client: reqwest::Client) -> Router {
     Router::new()
         .route("/login", get(login_get))
         .route("/login", post(login_post))
+        .route("/logout", get(logout))
         .route("/radical-svg/:path", get(radical_svg))
         .route("/test-500", get(test_500))
         .nest(
@@ -284,6 +291,46 @@ mod tests {
                 "/assignments"
             );
         }
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn logout(app: Router) {
+        let _m = mock("GET", "/user")
+            .with_status(200)
+            .with_body(json!({"data": {"username": "test-user"}}).to_string())
+            .create();
+
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::post("/login")
+                    .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .body(Body::from("api_key=fake-api-key"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let cookie = resp.headers().get(header::SET_COOKIE).unwrap();
+
+        let resp = app
+            .oneshot(
+                Request::get("/logout")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        assert_eq!(resp.headers().get(header::LOCATION).unwrap(), "/login");
+        assert!(resp
+            .headers()
+            .get(header::SET_COOKIE)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("wanikani-api-key=;"));
     }
 
     #[rstest]
