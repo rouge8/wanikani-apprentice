@@ -2,7 +2,7 @@ use axum::{
     async_trait,
     extract::{FromRequest, Path, RequestParts},
     http::{header, HeaderMap, StatusCode},
-    response::{IntoResponse, Redirect},
+    response::{Html, IntoResponse, Redirect},
     routing::{get, get_service, post},
     Extension, Form, Router,
 };
@@ -12,9 +12,11 @@ use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use middleware::lb_heartbeat_middleware;
-use serde::Deserialize;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::io;
 use std::{net::SocketAddr, sync::Arc};
+use tera::{Context, Tera};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer, services::ServeDir};
@@ -29,24 +31,52 @@ mod middleware;
 mod models;
 mod wanikani;
 
-#[derive(Debug, Deserialize)]
-struct LoginForm {
-    api_key: String,
+static TEMPLATES: Lazy<Tera> = Lazy::new(|| match Tera::new("templates/*.html") {
+    Ok(t) => t,
+    Err(err) => panic!("Parsing error: {}", err),
+});
+
+#[derive(Serialize, Debug)]
+struct LoginContext {
+    is_logged_in: bool,
+    invalid_api_key: bool,
+}
+
+impl LoginContext {
+    pub fn logged_out(invalid_api_key: bool) -> Self {
+        Self {
+            is_logged_in: false,
+            invalid_api_key,
+        }
+    }
 }
 
 async fn login_get(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
     if wanikani_api_key.is_some() {
-        Redirect::to("/assignments")
+        Redirect::to("/assignments").into_response()
     } else {
-        todo!("render login page");
+        Html::from(
+            TEMPLATES
+                .render(
+                    "login.html",
+                    &Context::from_serialize(&LoginContext::logged_out(false)).unwrap(),
+                )
+                .unwrap(),
+        )
+        .into_response()
     }
+}
+
+#[derive(Deserialize, Debug)]
+struct LoginForm {
+    api_key: String,
 }
 
 async fn login_post(
     Form(input): Form<LoginForm>,
     jar: PrivateCookieJar,
     state: Extension<Arc<State>>,
-) -> (PrivateCookieJar, Redirect) {
+) -> impl IntoResponse {
     let api_key = input.api_key.trim().to_string();
     let api = WaniKaniAPIClient::new(&api_key, &state.http_client);
 
@@ -57,11 +87,22 @@ async fn login_post(
                 .http_only(true)
                 .finish();
             let updated_jar = jar.add(cookie);
-            (updated_jar, Redirect::to("/assignments"))
+            (updated_jar, Redirect::to("/assignments")).into_response()
         }
         Err(err) => {
             if err.status().expect("error during request") == StatusCode::UNAUTHORIZED {
-                todo!("bad API key");
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Html::from(
+                        TEMPLATES
+                            .render(
+                                "login.html",
+                                &Context::from_serialize(&LoginContext::logged_out(true)).unwrap(),
+                            )
+                            .unwrap(),
+                    ),
+                )
+                    .into_response()
             } else {
                 unimplemented!("WaniKani API error");
             }
@@ -297,6 +338,32 @@ mod tests {
                 resp.headers().get(header::LOCATION).unwrap(),
                 "/assignments"
             );
+        }
+
+        #[rstest]
+        #[tokio::test]
+        async fn invalid_api_key(app: Router) {
+            let _m = mock("GET", "/user").with_status(401).create();
+
+            let resp = app
+                .oneshot(
+                    Request::post("/login")
+                        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                        .body(Body::from("api_key=fake-api-key"))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+            let body = String::from_utf8(
+                hyper::body::to_bytes(resp.into_body())
+                    .await
+                    .unwrap()
+                    .to_vec(),
+            )
+            .unwrap();
+            assert!(body.contains("is-invalid"));
         }
     }
 

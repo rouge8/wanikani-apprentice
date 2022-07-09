@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="/static/bootstrap.pulse.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style>
+      .radical, .kanji {
+        font-size: 3rem;
+      }
+      .radical a, .kanji a, .vocabulary a {
+        text-decoration: none;
+      }
+      .radical img {
+        height: 3rem;
+      }
+      .vocabulary {
+        font-size: 2rem;
+      }
+    </style>
+
+    <title>WK Apprentice - {%block title %}{% endblock %}</title>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-primary">
+      <div class="container-fluid">
+        <span class="navbar-brand">WK Apprentice</span>
+        <div class="navbar-nav">
+          {% if is_logged_in %}
+            <a class="nav-link" href="/logout">Logout</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    {%block body %}
+    {% endblock %}
+    <script data-goatcounter="https://wk-apprentice.goatcounter.com/count"
+      async src="//gc.zgo.at/count.js"></script>
+  </body>
+</html>
