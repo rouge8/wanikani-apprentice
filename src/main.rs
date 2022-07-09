@@ -1,5 +1,6 @@
 use axum::{
-    extract::Path,
+    async_trait,
+    extract::{FromRequest, Path, RequestParts},
     http::{header, HeaderMap, StatusCode},
     response::{IntoResponse, Redirect},
     routing::{get, get_service, post},
@@ -31,6 +32,14 @@ mod wanikani;
 #[derive(Debug, Deserialize)]
 struct LoginForm {
     api_key: String,
+}
+
+async fn login_get(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
+    if wanikani_api_key.is_some() {
+        Redirect::to("/assignments")
+    } else {
+        todo!("render login page");
+    }
 }
 
 async fn login_post(
@@ -96,11 +105,35 @@ struct State {
     http_client: reqwest::Client,
 }
 
+struct WaniKaniAPIKey(String);
+
+#[async_trait]
+impl<B> FromRequest<B> for WaniKaniAPIKey
+where
+    B: Send,
+{
+    type Rejection = (StatusCode, Redirect);
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let jar = PrivateCookieJar::<Key>::from_request(req)
+            .await
+            .map_err(|err| err.into_response());
+
+        if let Ok(jar) = jar {
+            if let Some(cookie) = jar.get(COOKIE_NAME) {
+                return Ok(WaniKaniAPIKey(cookie.value().to_string()));
+            }
+        }
+        Err((StatusCode::UNAUTHORIZED, Redirect::to("/login")))
+    }
+}
+
 fn create_app(config: Config, http_client: reqwest::Client) -> Router {
     let state = Arc::new(State { http_client });
     let key = Key::from(&config.session_key.into_bytes());
 
     Router::new()
+        .route("/login", get(login_get))
         .route("/login", post(login_post))
         .route("/radical-svg/:path", get(radical_svg))
         .route("/test-500", get(test_500))
@@ -191,6 +224,42 @@ mod tests {
     mod login {
         use super::*;
         use pretty_assertions::assert_eq;
+
+        #[rstest]
+        #[tokio::test]
+        async fn already_logged_in(app: Router) {
+            let _m = mock("GET", "/user")
+                .with_status(200)
+                .with_body(json!({"data": {"username": "test-user"}}).to_string())
+                .create();
+
+            let resp = app
+                .clone()
+                .oneshot(
+                    Request::post("/login")
+                        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                        .body(Body::from("api_key=fake-api-key"))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            let cookie = resp.headers().get(header::SET_COOKIE).unwrap();
+
+            let resp = app
+                .oneshot(
+                    Request::get("/login")
+                        .header(header::COOKIE, cookie)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+            assert_eq!(
+                resp.headers().get(header::LOCATION).unwrap(),
+                "/assignments"
+            );
+        }
 
         #[rstest]
         #[tokio::test]
