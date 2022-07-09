@@ -19,7 +19,7 @@ processes = []
   auto_rollback = true
 
 [[statics]]
-  guest_path = "/app/src/wanikani_apprentice/static"
+  guest_path = "/app/static"
   url_prefix = "/static"
 
 [[services]]
