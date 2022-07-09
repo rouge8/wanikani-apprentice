@@ -4,16 +4,17 @@ use axum::{
     http::{header, HeaderMap, Request, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, get_service},
     Extension, Router,
 };
 use config::Config;
 use db::Database;
 use dotenvy::dotenv;
+use std::io;
 use std::{net::SocketAddr, sync::Arc};
 use tower::ServiceBuilder;
-use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tower_http::{catch_panic::CatchPanicLayer, services::ServeDir};
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 use wanikani::WaniKaniAPIClient;
@@ -78,6 +79,10 @@ fn create_app(http_client: reqwest::Client) -> Router {
     Router::new()
         .route("/test-500", get(test_500))
         .route("/radical-svg/:path", get(radical_svg))
+        .nest(
+            "/static",
+            get_service(ServeDir::new("static")).handle_error(handle_static_files_error),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(CatchPanicLayer::new())
@@ -94,6 +99,10 @@ fn create_app(http_client: reqwest::Client) -> Router {
                 .layer(middleware::from_fn(lb_heartbeat_middleware))
                 .layer(Extension(state)),
         )
+}
+
+async fn handle_static_files_error(_err: io::Error) -> impl IntoResponse {
+    (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong...")
 }
 
 #[tokio::main]
