@@ -185,6 +185,10 @@ async fn main() -> reqwest::Result<()> {
         Ok(config) => config,
         Err(err) => panic!("{:#?}", err),
     };
+    let addr = config
+        .bind_address
+        .parse::<SocketAddr>()
+        .expect("invalid BIND_ADDRESS");
 
     let api = WaniKaniAPIClient::new(&config.wanikani_api_key, &http_client);
 
@@ -196,7 +200,6 @@ async fn main() -> reqwest::Result<()> {
     let app = create_app(config, http_client);
 
     // Serve the app
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     info!("listening on http://{addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -226,6 +229,7 @@ mod tests {
                 wanikani_api_key: "fake-key".to_string(),
                 session_key: "58dea9de79168641df396a89d4b80a83db10c44e0d9e51248d1cf8a17c9e8224"
                     .to_string(),
+                bind_address: "127.0.0.1:0".to_string(),
             },
             reqwest::Client::new(),
         )
