@@ -36,6 +36,13 @@ static TEMPLATES: Lazy<Tera> = Lazy::new(|| match Tera::new("templates/*.html") 
     Err(err) => panic!("Parsing error: {}", err),
 });
 
+async fn index(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
+    match wanikani_api_key {
+        Some(_) => Redirect::to("/assignments"),
+        None => Redirect::to("/login"),
+    }
+}
+
 #[derive(Serialize, Debug)]
 struct LoginContext {
     is_logged_in: bool,
@@ -180,6 +187,7 @@ fn create_app(config: Config, http_client: reqwest::Client) -> Router {
     let key = Key::from(&config.session_key.into_bytes());
 
     Router::new()
+        .route("/", get(index))
         .route("/login", get(login_get))
         .route("/login", post(login_post))
         .route("/logout", get(logout))
@@ -274,6 +282,58 @@ mod tests {
             },
             reqwest::Client::new(),
         )
+    }
+
+    mod index {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[rstest]
+        #[tokio::test]
+        async fn logged_in(app: Router) {
+            let _m = mock("GET", "/user")
+                .with_status(200)
+                .with_body(json!({"data": {"username": "test-user"}}).to_string())
+                .create();
+
+            let resp = app
+                .clone()
+                .oneshot(
+                    Request::post("/login")
+                        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                        .body(Body::from("api_key=fake-api-key"))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            let cookie = resp.headers().get(header::SET_COOKIE).unwrap();
+
+            let resp = app
+                .oneshot(
+                    Request::get("/")
+                        .header(header::COOKIE, cookie)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+            assert_eq!(
+                resp.headers().get(header::LOCATION).unwrap(),
+                "/assignments"
+            );
+        }
+
+        #[rstest]
+        #[tokio::test]
+        async fn logged_out(app: Router) {
+            let resp = app
+                .oneshot(Request::get("/").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+            assert_eq!(resp.headers().get(header::LOCATION).unwrap(), "/login");
+        }
     }
 
     mod login {
