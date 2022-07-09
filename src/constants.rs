@@ -13,3 +13,5 @@ pub static BS_PRIMARY_COLOR: Lazy<String> = Lazy::new(|| {
         .as_str()
         .to_string()
 });
+
+pub static COOKIE_NAME: &str = "wanikani-api-key";

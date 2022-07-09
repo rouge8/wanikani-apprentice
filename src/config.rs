@@ -2,6 +2,7 @@ use std::env;
 
 pub struct Config {
     pub wanikani_api_key: String,
+    pub session_key: String,
 }
 
 impl Config {
@@ -10,6 +11,8 @@ impl Config {
         Self {
             wanikani_api_key: env::var("WANIKANI_API_KEY")
                 .expect("WANIKANI_API_KEY environment variable is unset"),
+            session_key: env::var("SESSION_KEY")
+                .expect("SESSION_KEY environment variable is unset"),
         }
     }
 }

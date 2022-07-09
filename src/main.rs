@@ -1,15 +1,17 @@
 use axum::{
     extract::Path,
     http::{header, HeaderMap, StatusCode},
-    response::IntoResponse,
-    routing::{get, get_service},
-    Extension, Router,
+    response::{IntoResponse, Redirect},
+    routing::{get, get_service, post},
+    Extension, Form, Router,
 };
+use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
 use config::Config;
-use constants::BS_PRIMARY_COLOR;
+use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use middleware::lb_heartbeat_middleware;
+use serde::Deserialize;
 use std::io;
 use std::{net::SocketAddr, sync::Arc};
 use tower::ServiceBuilder;
@@ -25,6 +27,38 @@ mod db;
 mod middleware;
 mod models;
 mod wanikani;
+
+#[derive(Debug, Deserialize)]
+struct LoginForm {
+    api_key: String,
+}
+
+async fn login_post(
+    Form(input): Form<LoginForm>,
+    jar: PrivateCookieJar,
+    state: Extension<Arc<State>>,
+) -> (PrivateCookieJar, Redirect) {
+    let api_key = input.api_key.trim().to_string();
+    let api = WaniKaniAPIClient::new(&api_key, &state.http_client);
+
+    match api.username().await {
+        Ok(_) => {
+            let cookie = Cookie::build(COOKIE_NAME, api_key)
+                .secure(true)
+                .http_only(true)
+                .finish();
+            let updated_jar = jar.add(cookie);
+            (updated_jar, Redirect::to("/assignments"))
+        }
+        Err(err) => {
+            if err.status().expect("error during request") == StatusCode::UNAUTHORIZED {
+                todo!("bad API key");
+            } else {
+                unimplemented!("WaniKani API error");
+            }
+        }
+    }
+}
 
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
 async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
@@ -62,12 +96,14 @@ struct State {
     http_client: reqwest::Client,
 }
 
-fn create_app(http_client: reqwest::Client) -> Router {
+fn create_app(config: Config, http_client: reqwest::Client) -> Router {
     let state = Arc::new(State { http_client });
+    let key = Key::from(&config.session_key.into_bytes());
 
     Router::new()
-        .route("/test-500", get(test_500))
+        .route("/login", post(login_post))
         .route("/radical-svg/:path", get(radical_svg))
+        .route("/test-500", get(test_500))
         .nest(
             "/static",
             get_service(ServeDir::new("static")).handle_error(handle_static_files_error),
@@ -86,7 +122,8 @@ fn create_app(http_client: reqwest::Client) -> Router {
                         ),
                 )
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
-                .layer(Extension(state)),
+                .layer(Extension(state))
+                .layer(Extension(key)),
         )
 }
 
@@ -112,7 +149,7 @@ async fn main() -> reqwest::Result<()> {
     db.populate(&api).await?;
 
     // Build the application
-    let app = create_app(http_client);
+    let app = create_app(config, http_client);
 
     // Serve the app
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -130,16 +167,53 @@ mod tests {
     use super::*;
     use axum::{
         body::Body,
-        http::{Request, StatusCode},
+        http::{header, Request, StatusCode},
     };
     use mockito::mock;
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
+    use serde_json::json;
     use tower::ServiceExt;
 
     #[fixture]
     fn app() -> Router {
-        create_app(reqwest::Client::new())
+        create_app(
+            Config {
+                wanikani_api_key: "fake-key".to_string(),
+                session_key: "58dea9de79168641df396a89d4b80a83db10c44e0d9e51248d1cf8a17c9e8224"
+                    .to_string(),
+            },
+            reqwest::Client::new(),
+        )
+    }
+
+    mod login {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[rstest]
+        #[tokio::test]
+        async fn valid_api_key(app: Router) {
+            let _m = mock("GET", "/user")
+                .with_status(200)
+                .with_body(json!({"data": {"username": "test-user"}}).to_string())
+                .create();
+
+            let resp = app
+                .oneshot(
+                    Request::post("/login")
+                        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                        .body(Body::from("api_key=fake-api-key"))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+            assert_eq!(
+                resp.headers().get(header::LOCATION).unwrap(),
+                "/assignments"
+            );
+        }
     }
 
     #[rstest]
