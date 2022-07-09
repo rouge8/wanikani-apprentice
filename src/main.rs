@@ -8,6 +8,7 @@ use axum::{
     Extension, Router,
 };
 use config::Config;
+use constants::BS_PRIMARY_COLOR;
 use db::Database;
 use dotenvy::dotenv;
 use std::io;
@@ -20,6 +21,7 @@ use tracing_subscriber::FmtSubscriber;
 use wanikani::WaniKaniAPIClient;
 
 mod config;
+mod constants;
 mod db;
 mod models;
 mod wanikani;
@@ -56,8 +58,11 @@ async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> 
         .await
         .expect("failed to request SVG");
     resp.error_for_status_ref().expect("failed to download SVG");
-    // TODO: Replace '"stroke:#000"' with 'stroke:{BS_PRIMARY_COLOR}'
-    let svg = resp.text().await.expect("failed to decode SVG");
+    let svg = resp
+        .text()
+        .await
+        .expect("failed to decode SVG")
+        .replace("stroke:#000", &format!("stroke:{}", *BS_PRIMARY_COLOR));
 
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
@@ -172,7 +177,10 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
-        assert_eq!(body, "foo bar stroke:#000 other:#000");
+        assert_eq!(
+            body,
+            format!("foo bar stroke:{} other:#000", *BS_PRIMARY_COLOR)
+        );
     }
 
     #[rstest]
