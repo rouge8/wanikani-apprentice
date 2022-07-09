@@ -1,9 +1,7 @@
 use axum::{
-    body::Body,
     extract::Path,
-    http::{header, HeaderMap, Request, StatusCode},
-    middleware::{self, Next},
-    response::{IntoResponse, Response},
+    http::{header, HeaderMap, StatusCode},
+    response::IntoResponse,
     routing::{get, get_service},
     Extension, Router,
 };
@@ -11,6 +9,7 @@ use config::Config;
 use constants::BS_PRIMARY_COLOR;
 use db::Database;
 use dotenvy::dotenv;
+use middleware::lb_heartbeat_middleware;
 use std::io;
 use std::{net::SocketAddr, sync::Arc};
 use tower::ServiceBuilder;
@@ -23,24 +22,9 @@ use wanikani::WaniKaniAPIClient;
 mod config;
 mod constants;
 mod db;
+mod middleware;
 mod models;
 mod wanikani;
-
-async fn lb_heartbeat_middleware<B>(
-    req: Request<B>,
-    next: Next<B>,
-) -> Result<Response, StatusCode> {
-    let path = req.uri().path();
-
-    if path == "/__lbheartbeat__" {
-        Ok(Response::builder()
-            .body(Body::from("OK"))
-            .unwrap()
-            .into_response())
-    } else {
-        Ok(next.run(req).await)
-    }
-}
 
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
 async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
@@ -101,7 +85,7 @@ fn create_app(http_client: reqwest::Client) -> Router {
                                 .latency_unit(tower_http::LatencyUnit::Seconds),
                         ),
                 )
-                .layer(middleware::from_fn(lb_heartbeat_middleware))
+                .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(Extension(state)),
         )
 }
