@@ -181,7 +181,10 @@ async fn main() -> reqwest::Result<()> {
 
     let http_client = reqwest::Client::new();
 
-    let config = Config::from_env();
+    let config = match envy::from_env::<Config>() {
+        Ok(config) => config,
+        Err(err) => panic!("{:#?}", err),
+    };
 
     let api = WaniKaniAPIClient::new(&config.wanikani_api_key, &http_client);
 
