@@ -16,7 +16,7 @@ use std::io;
 use std::{net::SocketAddr, sync::Arc};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tower_http::{catch_panic::CatchPanicLayer, services::ServeDir};
+use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer, services::ServeDir};
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 use wanikani::WaniKaniAPIClient;
@@ -121,6 +121,7 @@ fn create_app(config: Config, http_client: reqwest::Client) -> Router {
                                 .latency_unit(tower_http::LatencyUnit::Seconds),
                         ),
                 )
+                .layer(CompressionLayer::new())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(Extension(state))
                 .layer(Extension(key)),
