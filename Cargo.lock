@@ -2342,6 +2342,7 @@ dependencies = [
  "chrono-humanize",
  "dotenvy",
  "envy",
+ "futures",
  "git-version",
  "hyper",
  "mockito",

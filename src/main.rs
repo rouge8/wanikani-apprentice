@@ -14,7 +14,7 @@ use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use git_version::git_version;
-use middleware::lb_heartbeat_middleware;
+use middleware::{lb_heartbeat_middleware, TrustedHostLayer};
 use models::{Assignment, Subject};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -311,6 +311,7 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                 .layer(sentry_tower::NewSentryLayer::new_from_top())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(CompressionLayer::new())
+                .layer(TrustedHostLayer::new(config.trusted_hosts))
                 .layer(Extension(state))
                 .layer(Extension(key)),
         )
@@ -390,6 +391,7 @@ mod tests {
                     .to_string(),
                 bind_address: "127.0.0.1:0".to_string(),
                 sentry_dsn: None,
+                trusted_hosts: vec!["".to_string()],
             },
             Database::new(),
             reqwest::Client::new(),
@@ -630,21 +632,62 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 
+    mod lb_heartbeat {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[rstest]
+        #[tokio::test]
+        async fn ok(app: Router) {
+            let resp = app
+                .oneshot(
+                    Request::get("/__lbheartbeat__")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+
+            let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+            assert_eq!(body, "OK");
+        }
+
+        #[rstest]
+        #[tokio::test]
+        async fn ignores_host_header(app: Router) {
+            let resp = app
+                .oneshot(
+                    Request::get("/__lbheartbeat__")
+                        .header(header::HOST, "foo.com")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+
+            let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+            assert_eq!(body, "OK");
+        }
+    }
+
     #[rstest]
     #[tokio::test]
-    async fn test_lb_heartbeat(app: Router) {
+    async fn trusted_host_header(app: Router) {
         let resp = app
             .oneshot(
-                Request::get("/__lbheartbeat__")
+                Request::get("/")
+                    .header(header::HOST, "foo.com")
                     .body(Body::empty())
                     .unwrap(),
             )
             .await
             .unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 
         let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
-        assert_eq!(body, "OK");
+        assert_eq!(body, "Invalid host header");
     }
 
     #[rstest]
