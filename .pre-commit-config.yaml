@@ -28,102 +28,16 @@ repos:
       - id: yamllint
         args:
           - --strict
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.9.0
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
     hooks:
-      - id: python-check-blanket-noqa
-      - id: python-check-mock-methods
-      - id: python-no-log-warn
-      - id: python-use-type-annotations
-      - id: rst-backticks
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
-    hooks:
-      - id: pyupgrade
-        args:
-          - --keep-percent-format
-          - --py310-plus
-  - repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.2.3
-    hooks:
-      - id: add-trailing-comma
-        args:
-          - --py36-plus
-  - repo: https://github.com/psf/black
-    rev: 22.6.0
-    hooks:
-      - id: black
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
-    hooks:
-      - id: isort
-  - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-        additional_dependencies: &flake8_dependencies
-          - flake8-docstrings
-          - flake8-comprehensions
-          - flake8-bugbear
-          - flake8-no-implicit-concat
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.3.0
-    hooks:
-      - id: yesqa
-        additional_dependencies: *flake8_dependencies
-  - repo: https://github.com/PyCQA/doc8
-    rev: 0.11.2
-    hooks:
-      - id: doc8
-        args:
-          - --quiet
+      - id: fmt
+      - id: cargo-check
+      - id: clippy
   - repo: https://github.com/rtts/djhtml
     rev: v1.4.11
     hooks:
       - id: djhtml
         args:
           - --tabwidth=2
-        types: [jinja]
-  - repo: local
-    hooks:
-      - id: attrs-apis
-        name: Use new attrs APIs (@attrs.define, @attrs.frozen, attrs.field())
-        language: pygrep
-        entry: >
-          (?x)(
-            # Legacy APIs
-            @attr\.s
-            |attr\.ib\(
-            |@attr\.dataclass
-            # Legacy namespace
-            |@attr\.define
-            |@attr\.frozen
-            |@attr\.mutable
-            |attr\.field\(
-            # Use @attrs.define instead
-            |@attrs\.mutable
-          )
-        types: [python]
-      - id: logging.getLogger
-        name: Use structlog.get_logger() instead of logging.getLogger()
-        language: pygrep
-        entry: logging.getLogger\(
-        types: [python]
-      - id: missing-__init__.py
-        name: missing __init__.py
-        language: system
-        types: [python]
-        entry: >
-          sh -c '
-            MISSING=false
-            for f in $@; do
-              f="$(dirname ${f})"
-              if [ ! -f "${f}/__init__.py" ]; then
-                MISSING=true
-                echo "ERROR: No __init__.py found for ${f}/";
-              fi
-            done
-            if [ $MISSING == true ]; then
-              exit 1
-            fi
-          '
+        types: [html]

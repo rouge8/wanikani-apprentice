@@ -7,19 +7,18 @@ processes = []
 [build]
 
 [env]
-  DEBUG = "false"
-  WEB_CONCURRENCY = "2"
   SENTRY_DSN = "https://64dfba28156a490999df043f193cfcd3@o1059726.ingest.sentry.io/6048576"
   SENTRY_ENVIRONMENT = "prod"
   HTTPS_ONLY = "true"
   TRUSTED_HOSTS = "wk-apprentice.rouge8.com"
+  BIND_ADDRESS = "0.0.0.0:8080"
 
 [experimental]
   allowed_public_ports = []
   auto_rollback = true
 
 [[statics]]
-  guest_path = "/app/src/wanikani_apprentice/static"
+  guest_path = "/app/static"
   url_prefix = "/static"
 
 [[services]]
@@ -36,6 +35,7 @@ processes = []
   [[services.ports]]
     handlers = ["http"]
     port = 80
+    force_https = true
 
   [[services.ports]]
     handlers = ["tls", "http"]
