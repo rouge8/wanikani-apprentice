@@ -1,7 +1,7 @@
 FROM rust:1.62-slim-bullseye AS builder
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends pkg-config libssl-dev \
+  && apt-get install -y --no-install-recommends pkg-config libssl-dev git \
   && apt-get clean
 
 WORKDIR /src/wanikani-apprentice

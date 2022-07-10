@@ -13,6 +13,7 @@ use config::Config;
 use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
+use git_version::git_version;
 use middleware::lb_heartbeat_middleware;
 use models::{Assignment, Subject};
 use once_cell::sync::Lazy;
@@ -331,6 +332,7 @@ async fn main() -> reqwest::Result<()> {
     let _guard = sentry::init((
         config.sentry_dsn.clone(),
         sentry::ClientOptions {
+            release: Some(git_version!().into()),
             ..Default::default()
         },
     ));
