@@ -7,7 +7,7 @@ RUN apt-get update \
 WORKDIR /src/wanikani-apprentice
 COPY . .
 
-RUN cargo install --path .
+RUN cargo install --locked --path .
 
 FROM debian:bullseye-slim
 RUN apt-get update \
