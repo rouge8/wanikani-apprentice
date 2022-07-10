@@ -308,11 +308,11 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                                 .latency_unit(tower_http::LatencyUnit::Seconds),
                         ),
                 )
+                .layer(sentry_tower::NewSentryLayer::new_from_top())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(CompressionLayer::new())
                 .layer(Extension(state))
-                .layer(Extension(key))
-                .layer(sentry_tower::NewSentryLayer::new_from_top()),
+                .layer(Extension(key)),
         )
 }
 
@@ -350,9 +350,8 @@ async fn main() -> reqwest::Result<()> {
         .parse::<SocketAddr>()
         .expect("invalid BIND_ADDRESS");
 
-    let api = WaniKaniAPIClient::new(&config.wanikani_api_key, &http_client);
-
     // Load the WaniKani data
+    let api = WaniKaniAPIClient::new(&config.wanikani_api_key, &http_client);
     let mut db = Database::new();
     db.populate(&api).await?;
 
