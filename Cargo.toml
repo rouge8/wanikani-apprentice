@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.5.11"
+axum = "0.5.12"
 axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 chrono-humanize = "0.2.1"
