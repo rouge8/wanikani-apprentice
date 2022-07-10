@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Apprentice Assignments{% endblock %}
+{% block body %}
+  <div class="container">
+    <div class="row">
+      <h1>Apprentice Assignments</h1>
+    </div>
+
+    {% if radicals %}
+      <div class="row">
+        <h2>Radicals</h2>
+      </div>
+      <div class="row">
+        {% for radical in radicals %}
+          <div class="card col-md-3 col-6">
+            <p class="radical">
+              <a href="{{ radical.subject.Radical.document_url }}">
+                {% if radical.subject.Radical.characters.length %}
+                  {{ radical.subject.Radical.characters }}
+                {% else %}
+                  <img src="{{ "/radical-svg/" ~ radical.subject.Radical.character_svg_path }}" alt="radical for {{ radical.subject.Radical.meanings[0] }}" />
+                {% endif %}
+              </a>
+            </p>
+            <p>{{ radical.subject.Radical.meanings | join(sep=", ")}}</p>
+            <p class="fst-italic">Review {{ radical.available_at | display_time_remaining(now=now) }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if kanji %}
+      <div class="row">
+        <h2>Kanji</h2>
+      </div>
+      <div class="row">
+        {% for k in kanji %}
+          <div class="card col-md-3 col-6">
+            <p class="kanji">
+              <a href="{{ k.subject.Kanji.document_url }}">
+                {{ k.subject.Kanji.characters }}
+              </a>
+            </p>
+            <p>{{ k.subject.Kanji.readings | join(sep=", ")}}</p>
+            <p>{{ k.subject.Kanji.meanings | join(sep=", ")}}</p>
+            <p class="fst-italic">Review {{ k.available_at | display_time_remaining(now=now) }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if vocabulary %}
+      <div class="row">
+        <h2>Vocabulary</h2>
+      </div>
+      <div class="row">
+        {% for v in vocabulary %}
+          <div class="card col-md-4 col-6">
+            <p class="vocabulary">
+              <a href="{{ v.subject.Vocabulary.document_url }}">
+                {{ v.subject.Vocabulary.characters }}
+              </a>
+            </p>
+            <p>{{ v.subject.Vocabulary.readings | join(sep=", ") }}</p>
+            <p>{{ v.subject.Vocabulary.meanings | join(sep=", ")}}</p>
+            <p class="fst-italic">Review {{ v.available_at | display_time_remaining(now=now) }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  </div>
+{% endblock %}

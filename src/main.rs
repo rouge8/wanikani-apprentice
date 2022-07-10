@@ -7,15 +7,18 @@ use axum::{
     Extension, Form, Router,
 };
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
+use chrono::{DateTime, Utc};
+use chrono_humanize::{Accuracy, HumanTime, Tense};
 use config::Config;
 use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use middleware::lb_heartbeat_middleware;
+use models::{Assignment, Subject};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::io;
-use std::{net::SocketAddr, sync::Arc};
+use serde_json::Value;
+use std::{collections::HashMap, fmt, io, net::SocketAddr, sync::Arc};
 use tera::{Context, Tera};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
@@ -31,10 +34,34 @@ mod middleware;
 mod models;
 mod wanikani;
 
-static TEMPLATES: Lazy<Tera> = Lazy::new(|| match Tera::new("templates/*.html") {
-    Ok(t) => t,
-    Err(err) => panic!("Parsing error: {}", err),
+static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
+    let mut tera = match Tera::new("templates/*.html") {
+        Ok(t) => t,
+        Err(err) => panic!("Parsing error: {}", err),
+    };
+    tera.register_filter("display_time_remaining", display_time_remaining);
+    tera
 });
+
+fn display_time_remaining(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let value = match value {
+        Value::String(s) => DateTime::parse_from_rfc3339(s).expect("unable to parse DateTime"),
+        _ => unimplemented!(),
+    };
+    let now = match args.get("now").expect("missing argument 'now'") {
+        Value::String(s) => DateTime::parse_from_rfc3339(s).expect("unable to parse DateTime"),
+        _ => unimplemented!(),
+    };
+    let delta = value.signed_duration_since(now);
+
+    let formatted = if delta.num_seconds() > 0 {
+        HumanTime::from(delta).to_text_en(Accuracy::Rough, Tense::Future)
+    } else {
+        "now".to_string()
+    };
+
+    Ok(Value::String(formatted))
+}
 
 async fn index(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
     match wanikani_api_key {
@@ -123,6 +150,68 @@ async fn logout(jar: PrivateCookieJar) -> (PrivateCookieJar, Redirect) {
     (updated_jar, Redirect::to("/login"))
 }
 
+#[derive(Serialize, Debug)]
+struct AssignmentContext {
+    is_logged_in: bool,
+    radicals: Vec<Assignment>,
+    kanji: Vec<Assignment>,
+    vocabulary: Vec<Assignment>,
+    now: DateTime<Utc>,
+}
+
+impl AssignmentContext {
+    pub fn new(
+        radicals: Vec<Assignment>,
+        kanji: Vec<Assignment>,
+        vocabulary: Vec<Assignment>,
+    ) -> Self {
+        Self {
+            is_logged_in: true,
+            radicals,
+            kanji,
+            vocabulary,
+            now: Utc::now(),
+        }
+    }
+}
+
+async fn assignments(
+    wanikani_api_key: WaniKaniAPIKey,
+    state: Extension<Arc<State>>,
+) -> impl IntoResponse {
+    let api = WaniKaniAPIClient::new(&wanikani_api_key.to_string(), &state.http_client);
+
+    let mut radicals = Vec::new();
+    let mut kanji = Vec::new();
+    let mut vocabulary = Vec::new();
+
+    let mut assignments = api
+        .assignments(&state.db)
+        .await
+        .expect("failed fetching assignments");
+
+    assignments.sort_by_key(|assignment| assignment.available_at);
+
+    for assignment in assignments {
+        match assignment.subject {
+            Subject::Radical(_) => radicals.push(assignment),
+            Subject::Kanji(_) => kanji.push(assignment),
+            Subject::Vocabulary(_) => vocabulary.push(assignment),
+        }
+    }
+
+    Html::from(
+        TEMPLATES
+            .render(
+                "assignments.html",
+                &Context::from_serialize(&AssignmentContext::new(radicals, kanji, vocabulary))
+                    .unwrap(),
+            )
+            .unwrap(),
+    )
+    .into_response()
+}
+
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
 async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
     #[cfg(not(test))]
@@ -156,10 +245,17 @@ async fn test_500() {
 }
 
 struct State {
+    db: Database,
     http_client: reqwest::Client,
 }
 
 struct WaniKaniAPIKey(String);
+
+impl fmt::Display for WaniKaniAPIKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[async_trait]
 impl<B> FromRequest<B> for WaniKaniAPIKey
@@ -178,12 +274,12 @@ where
                 return Ok(WaniKaniAPIKey(cookie.value().to_string()));
             }
         }
-        Err((StatusCode::UNAUTHORIZED, Redirect::to("/login")))
+        Err((StatusCode::SEE_OTHER, Redirect::to("/login")))
     }
 }
 
-fn create_app(config: Config, http_client: reqwest::Client) -> Router {
-    let state = Arc::new(State { http_client });
+fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Router {
+    let state = Arc::new(State { db, http_client });
     let key = Key::from(&config.session_key.into_bytes());
 
     Router::new()
@@ -191,6 +287,7 @@ fn create_app(config: Config, http_client: reqwest::Client) -> Router {
         .route("/login", get(login_get))
         .route("/login", post(login_post))
         .route("/logout", get(logout))
+        .route("/assignments", get(assignments))
         .route("/radical-svg/:path", get(radical_svg))
         .route("/test-500", get(test_500))
         .nest(
@@ -246,7 +343,7 @@ async fn main() -> reqwest::Result<()> {
     db.populate(&api).await?;
 
     // Build the application
-    let app = create_app(config, http_client);
+    let app = create_app(config, db, http_client);
 
     // Serve the app
     info!("listening on http://{addr}");
@@ -280,6 +377,7 @@ mod tests {
                     .to_string(),
                 bind_address: "127.0.0.1:0".to_string(),
             },
+            Database::new(),
             reqwest::Client::new(),
         )
     }
@@ -467,6 +565,22 @@ mod tests {
             .starts_with("wanikani-api-key=;"));
     }
 
+    mod assignments {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[rstest]
+        #[tokio::test]
+        async fn logged_out_redirect(app: Router) {
+            let resp = app
+                .oneshot(Request::get("/assignments").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+            assert_eq!(resp.headers().get(header::LOCATION).unwrap(), "/login");
+        }
+    }
+
     #[rstest]
     #[tokio::test]
     async fn test_radical_svg(app: Router) {
@@ -517,5 +631,20 @@ mod tests {
 
         let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
         assert_eq!(body, "OK");
+    }
+
+    #[rstest]
+    #[case("2022-01-01T00:00:00Z", "2022-01-01T00:00:00Z", "now")]
+    #[case("2022-01-01T00:00:00Z", "2022-01-01T00:00:01Z", "now")]
+    #[case("2022-01-01T00:55:00Z", "2022-01-01T00:00:00Z", "in an hour")]
+    #[case("2022-01-01T23:00:00Z", "2022-01-01T00:00:00Z", "in a day")]
+    #[case("2022-01-01T01:45:00Z", "2022-01-01T00:00:00Z", "in 2 hours")]
+    #[case("2022-01-01T00:20:00Z", "2022-01-01T00:00:00Z", "in 20 minutes")]
+    fn test_display_time_remaining(#[case] value: &str, #[case] now: &str, #[case] expected: &str) {
+        let args = HashMap::from([("now".to_string(), Value::String(now.to_string()))]);
+        assert_eq!(
+            display_time_remaining(&Value::String(value.to_string()), &args).unwrap(),
+            expected.to_string()
+        );
     }
 }
