@@ -24,7 +24,7 @@ use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer, services::ServeDir};
 use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{prelude::*, FmtSubscriber};
 use wanikani::WaniKaniAPIClient;
 
 mod config;
@@ -307,10 +307,11 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                                 .latency_unit(tower_http::LatencyUnit::Seconds),
                         ),
                 )
-                .layer(CompressionLayer::new())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
+                .layer(CompressionLayer::new())
                 .layer(Extension(state))
-                .layer(Extension(key)),
+                .layer(Extension(key))
+                .layer(sentry_tower::NewSentryLayer::new_from_top()),
         )
 }
 
@@ -321,16 +322,27 @@ async fn handle_static_files_error(_err: io::Error) -> impl IntoResponse {
 #[tokio::main]
 async fn main() -> reqwest::Result<()> {
     dotenv().ok();
-
-    let subscriber = FmtSubscriber::builder().finish();
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
-    let http_client = reqwest::Client::new();
-
     let config = match envy::from_env::<Config>() {
         Ok(config) => config,
         Err(err) => panic!("{:#?}", err),
     };
+
+    // Configure Sentry
+    let _guard = sentry::init((
+        config.sentry_dsn.clone(),
+        sentry::ClientOptions {
+            ..Default::default()
+        },
+    ));
+
+    // Configure logging
+    let subscriber = FmtSubscriber::builder()
+        .finish()
+        .with(sentry_tracing::layer());
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    let http_client = reqwest::Client::new();
+
     let addr = config
         .bind_address
         .parse::<SocketAddr>()
@@ -376,6 +388,7 @@ mod tests {
                 session_key: "58dea9de79168641df396a89d4b80a83db10c44e0d9e51248d1cf8a17c9e8224"
                     .to_string(),
                 bind_address: "127.0.0.1:0".to_string(),
+                sentry_dsn: None,
             },
             Database::new(),
             reqwest::Client::new(),
