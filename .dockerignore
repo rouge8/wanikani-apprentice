@@ -3,3 +3,9 @@
 
 # Rust
 /target
+
+# Misc
+.github/
+LICENSE
+Dockerfile
+fly.toml
