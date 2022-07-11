@@ -334,7 +334,7 @@ async fn main() -> reqwest::Result<()> {
     let _guard = sentry::init((
         config.sentry_dsn.clone(),
         sentry::ClientOptions {
-            release: Some(git_version!().into()),
+            release: Some(git_version!(args = ["--always"]).into()),
             ..Default::default()
         },
     ));
