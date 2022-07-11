@@ -117,10 +117,11 @@ async fn login_post(
 
     match api.username().await {
         Ok(_) => {
-            let cookie = Cookie::build(COOKIE_NAME, api_key)
+            let mut cookie = Cookie::build(COOKIE_NAME, api_key)
                 .secure(true)
                 .http_only(true)
                 .finish();
+            cookie.make_permanent();
             let updated_jar = jar.add(cookie);
             (updated_jar, Redirect::to("/assignments")).into_response()
         }
