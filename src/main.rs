@@ -1,9 +1,10 @@
 use axum::{
     async_trait,
+    body::{self, Empty, Full},
     extract::{FromRequest, Path, RequestParts},
-    http::{header, HeaderMap, StatusCode},
-    response::{Html, IntoResponse, Redirect},
-    routing::{get, get_service, post},
+    http::{header, HeaderMap, HeaderValue, StatusCode},
+    response::{Html, IntoResponse, Redirect, Response},
+    routing::{get, post},
     Extension, Form, Router,
 };
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
@@ -14,17 +15,16 @@ use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use git_version::git_version;
-use include_dir::{include_dir, Dir};
 use middleware::{lb_heartbeat_middleware, TrustedHostLayer};
 use models::{Assignment, Subject};
-use once_cell::sync::Lazy;
+use resources::{STATIC_DIR, TEMPLATES};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, fmt, io, net::SocketAddr, sync::Arc};
-use tera::{Context, Tera};
+use std::{collections::HashMap, fmt, net::SocketAddr, sync::Arc};
+use tera::Context;
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer, services::ServeDir};
+use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer};
 use tracing::{info, Level};
 use tracing_subscriber::{prelude::*, FmtSubscriber};
 use wanikani::WaniKaniAPIClient;
@@ -34,23 +34,8 @@ mod constants;
 mod db;
 mod middleware;
 mod models;
+mod resources;
 mod wanikani;
-
-static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates");
-static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
-    let mut tera = Tera::default();
-    match tera.add_raw_templates(
-        TEMPLATES_DIR
-            .files()
-            .map(|file| (file.path().to_string_lossy(), file.contents_utf8().unwrap()))
-            .collect::<Vec<_>>(),
-    ) {
-        Ok(()) => (),
-        Err(err) => panic!("Parsing error: {}", err),
-    }
-    tera.register_filter("display_time_remaining", display_time_remaining);
-    tera
-});
 
 fn display_time_remaining(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
     let value = match value {
@@ -250,6 +235,27 @@ async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> 
     (headers, svg)
 }
 
+/// Servce static files from the binary
+async fn static_file(Path(path): Path<String>) -> impl IntoResponse {
+    let path = path.trim_start_matches('/');
+    let mime_type = mime_guess::from_path(path).first_or_text_plain();
+
+    match STATIC_DIR.get_file(path) {
+        Some(file) => Response::builder()
+            .status(StatusCode::OK)
+            .header(
+                header::CONTENT_TYPE,
+                HeaderValue::from_str(mime_type.as_ref()).unwrap(),
+            )
+            .body(body::boxed(Full::from(file.contents())))
+            .unwrap(),
+        None => Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(body::boxed(Empty::new()))
+            .unwrap(),
+    }
+}
+
 async fn test_500() {
     let _ = 1 / 0;
 }
@@ -299,11 +305,8 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
         .route("/logout", get(logout))
         .route("/assignments", get(assignments))
         .route("/radical-svg/:path", get(radical_svg))
+        .route("/static/:path", get(static_file))
         .route("/test-500", get(test_500))
-        .nest(
-            "/static",
-            get_service(ServeDir::new("static")).handle_error(handle_static_files_error),
-        )
         .layer(
             ServiceBuilder::new()
                 .layer(CatchPanicLayer::new())
@@ -324,10 +327,6 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                 .layer(Extension(state))
                 .layer(Extension(key)),
         )
-}
-
-async fn handle_static_files_error(_err: io::Error) -> impl IntoResponse {
-    (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong...")
 }
 
 #[tokio::main]

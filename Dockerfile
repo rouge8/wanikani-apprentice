@@ -26,5 +26,4 @@ RUN apt-get update \
   && apt-get clean
 COPY --from=builder /usr/local/cargo/bin/wanikani-apprentice /usr/local/bin/wanikani-apprentice
 WORKDIR /app
-COPY static static
 CMD ["wanikani-apprentice"]

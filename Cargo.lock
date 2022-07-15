@@ -2365,6 +2365,7 @@ dependencies = [
  "git-version",
  "hyper",
  "include_dir",
+ "mime_guess",
  "mockito",
  "once_cell",
  "pretty_assertions",
