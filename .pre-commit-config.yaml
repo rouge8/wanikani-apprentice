@@ -31,7 +31,6 @@ repos:
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
     hooks:
-      - id: fmt
       - id: cargo-check
       - id: clippy
   - repo: https://github.com/rtts/djhtml
@@ -41,3 +40,11 @@ repos:
         args:
           - --tabwidth=2
         types: [html]
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        language: system
+        entry: cargo +nightly fmt
+        types: [rust]
+        args: ["--"]

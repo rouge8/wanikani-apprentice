@@ -1,33 +1,37 @@
-use axum::{
-    async_trait,
-    body::{self, Empty, Full},
-    extract::{FromRequest, Path, RequestParts},
-    http::{header, HeaderMap, HeaderValue, StatusCode},
-    response::{Html, IntoResponse, Redirect, Response},
-    routing::{get, post},
-    Extension, Form, Router,
-};
+use std::collections::HashMap;
+use std::fmt;
+use std::net::SocketAddr;
+use std::sync::Arc;
+
+use axum::body::{self, Empty, Full};
+use axum::extract::{FromRequest, Path, RequestParts};
+use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
+use axum::response::{Html, IntoResponse, Redirect, Response};
+use axum::routing::{get, post};
+use axum::{async_trait, Extension, Form, Router};
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
 use chrono::{DateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
-use config::Config;
-use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
-use db::Database;
 use dotenvy::dotenv;
 use git_version::git_version;
-use middleware::{lb_heartbeat_middleware, TrustedHostLayer};
-use models::{Assignment, Subject};
-use resources::{STATIC_DIR, TEMPLATES};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, fmt, net::SocketAddr, sync::Arc};
 use tera::Context;
 use tower::ServiceBuilder;
+use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::compression::CompressionLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tower_http::{catch_panic::CatchPanicLayer, compression::CompressionLayer};
 use tracing::{info, Level};
-use tracing_subscriber::{prelude::*, FmtSubscriber};
-use wanikani::WaniKaniAPIClient;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::FmtSubscriber;
+
+use crate::config::Config;
+use crate::constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
+use crate::db::Database;
+use crate::middleware::{lb_heartbeat_middleware, TrustedHostLayer};
+use crate::models::{Assignment, Subject};
+use crate::resources::{STATIC_DIR, TEMPLATES};
+use crate::wanikani::WaniKaniAPIClient;
 
 mod config;
 mod constants;
@@ -379,16 +383,15 @@ async fn main() -> reqwest::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use axum::{
-        body::Body,
-        http::{header, Request, StatusCode},
-    };
+    use axum::body::Body;
+    use axum::http::{header, Request, StatusCode};
     use mockito::mock;
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
     use serde_json::json;
     use tower::ServiceExt;
+
+    use super::*;
 
     #[fixture]
     fn app() -> Router {
@@ -407,8 +410,9 @@ mod tests {
     }
 
     mod index {
-        use super::*;
         use pretty_assertions::assert_eq;
+
+        use super::*;
 
         #[rstest]
         #[tokio::test]
@@ -459,8 +463,9 @@ mod tests {
     }
 
     mod login {
-        use super::*;
         use pretty_assertions::assert_eq;
+
+        use super::*;
 
         #[rstest]
         #[tokio::test]
@@ -590,8 +595,9 @@ mod tests {
     }
 
     mod assignments {
-        use super::*;
         use pretty_assertions::assert_eq;
+
+        use super::*;
 
         #[rstest]
         #[tokio::test]
@@ -641,8 +647,9 @@ mod tests {
     }
 
     mod lb_heartbeat {
-        use super::*;
         use pretty_assertions::assert_eq;
+
+        use super::*;
 
         #[rstest]
         #[tokio::test]

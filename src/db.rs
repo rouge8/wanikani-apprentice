@@ -1,9 +1,9 @@
-use crate::{
-    models::{Kanji, Radical, Vocabulary},
-    wanikani::WaniKaniAPIClient,
-};
 use std::collections::HashMap;
+
 use tracing::info;
+
+use crate::models::{Kanji, Radical, Vocabulary};
+use crate::wanikani::WaniKaniAPIClient;
 
 pub struct Database {
     pub radical: HashMap<u64, Radical>,

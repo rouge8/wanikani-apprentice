@@ -1,11 +1,10 @@
-use axum::{
-    body::Body,
-    http::{header, HeaderValue, Request, StatusCode},
-    middleware::Next,
-    response::{IntoResponse, Response},
-};
-use futures::future::BoxFuture;
 use std::task::{Context, Poll};
+
+use axum::body::Body;
+use axum::http::{header, HeaderValue, Request, StatusCode};
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
+use futures::future::BoxFuture;
 use tower::{Layer, Service};
 
 /// Add a `/__lbheartbeat__` endpoint that always responds with `OK`.

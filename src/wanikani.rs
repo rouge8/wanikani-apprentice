@@ -1,10 +1,12 @@
-use crate::db::Database;
-use crate::models::{Assignment, Kanji, Radical, Subject, Vocabulary};
-use chrono::DateTime;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Instant;
+
+use chrono::DateTime;
+use serde_json::Value;
 use tracing::info;
+
+use crate::db::Database;
+use crate::models::{Assignment, Kanji, Radical, Subject, Vocabulary};
 
 pub struct WaniKaniAPIClient<'a> {
     pub base_url: String,
@@ -276,12 +278,13 @@ impl<'a> WaniKaniAPIClient<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use mockito::{mock, Matcher};
     use once_cell::sync::OnceCell;
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
     use serde_json::json;
+
+    use super::*;
 
     static HTTP_CLIENT: OnceCell<reqwest::Client> = OnceCell::new();
 

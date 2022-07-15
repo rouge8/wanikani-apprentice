@@ -1,6 +1,7 @@
-use crate::resources::STATIC_DIR;
 use once_cell::sync::Lazy;
 use regex::Regex;
+
+use crate::resources::STATIC_DIR;
 
 pub static BS_PRIMARY_COLOR: Lazy<String> = Lazy::new(|| {
     let re = Regex::new(r"--bs-primary:(#[a-f0-9]{6})").unwrap();
