@@ -41,7 +41,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
+          override: false
           components: rustfmt
       - uses: Swatinem/rust-cache@v1.4.0
       - uses: actions/setup-python@v4.1.0
