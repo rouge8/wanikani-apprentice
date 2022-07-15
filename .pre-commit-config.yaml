@@ -28,11 +28,6 @@ repos:
       - id: yamllint
         args:
           - --strict
-  - repo: https://github.com/doublify/pre-commit-rust
-    rev: v1.0
-    hooks:
-      - id: cargo-check
-      - id: clippy
   - repo: https://github.com/rtts/djhtml
     rev: v1.4.11
     hooks:
@@ -42,9 +37,21 @@ repos:
         types: [html]
   - repo: local
     hooks:
+      - id: cargo-check
+        name: cargo check
+        language: system
+        entry: cargo +stable check
+        types: [rust]
+        pass_filenames: false
       - id: rustfmt
         name: rustfmt
         language: system
         entry: cargo +nightly fmt
         types: [rust]
         args: ["--"]
+      - id: clippy
+        name: clippy
+        language: system
+        entry: cargo +stable clippy -- -D warnings
+        types: [rust]
+        pass_filenames: false
