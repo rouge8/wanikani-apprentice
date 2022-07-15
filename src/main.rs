@@ -14,6 +14,7 @@ use constants::{BS_PRIMARY_COLOR, COOKIE_NAME};
 use db::Database;
 use dotenvy::dotenv;
 use git_version::git_version;
+use include_dir::{include_dir, Dir};
 use middleware::{lb_heartbeat_middleware, TrustedHostLayer};
 use models::{Assignment, Subject};
 use once_cell::sync::Lazy;
@@ -35,11 +36,18 @@ mod middleware;
 mod models;
 mod wanikani;
 
+static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates");
 static TEMPLATES: Lazy<Tera> = Lazy::new(|| {
-    let mut tera = match Tera::new("templates/*.html") {
-        Ok(t) => t,
+    let mut tera = Tera::default();
+    match tera.add_raw_templates(
+        TEMPLATES_DIR
+            .files()
+            .map(|file| (file.path().to_string_lossy(), file.contents_utf8().unwrap()))
+            .collect::<Vec<_>>(),
+    ) {
+        Ok(()) => (),
         Err(err) => panic!("Parsing error: {}", err),
-    };
+    }
     tera.register_filter("display_time_remaining", display_time_remaining);
     tera
 });
