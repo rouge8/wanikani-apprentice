@@ -24,9 +24,11 @@ jobs:
           components: llvm-tools-preview
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v2.0.0
       - name: Run tests
-        run: cargo llvm-cov --no-fail-fast --html
+        run: cargo llvm-cov nextest --no-fail-fast --html
       - name: Upload HTML coverage report
         uses: actions/upload-artifact@v3
         with:
