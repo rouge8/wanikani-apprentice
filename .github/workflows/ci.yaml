@@ -21,11 +21,19 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
       - uses: Swatinem/rust-cache@v1.4.0
       - name: Build
         run: cargo build --verbose
       - name: Run tests
-        run: cargo test --no-fail-fast
+        run: cargo llvm-cov --no-fail-fast --html
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: target/llvm-cov/html
 
   pre-commit:
     runs-on: ubuntu-latest
