@@ -24,7 +24,7 @@ jobs:
           components: llvm-tools-preview
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-      - uses: Swatinem/rust-cache@v1.4.0
+      - uses: Swatinem/rust-cache@v2.0.0
       - name: Run tests
         run: cargo llvm-cov --no-fail-fast --html
       - name: Upload HTML coverage report
@@ -49,7 +49,7 @@ jobs:
           toolchain: nightly
           override: false
           components: rustfmt
-      - uses: Swatinem/rust-cache@v1.4.0
+      - uses: Swatinem/rust-cache@v2.0.0
       - uses: actions/setup-python@v4.1.0
       - uses: pre-commit/action@v3.0.0
 
