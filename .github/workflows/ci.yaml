@@ -32,8 +32,6 @@ jobs:
         with:
           name: coverage-report
           path: target/llvm-cov/html
-      - name: Clean coverage data
-        run: cargo llvm-cov clean
 
   pre-commit:
     runs-on: ubuntu-latest
