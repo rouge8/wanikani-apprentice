@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
+use anyhow::{bail, Result};
 use chrono::DateTime;
 use serde_json::Value;
 use tracing::info;
@@ -227,7 +228,7 @@ impl<'a> WaniKaniAPIClient<'a> {
         Ok(results)
     }
 
-    pub async fn assignments(&self, db: &Database) -> reqwest::Result<Vec<Assignment>> {
+    pub async fn assignments(&self, db: &Database) -> Result<Vec<Assignment>> {
         let mut results = Vec::new();
 
         let apprentice_srs_stages = APPRENTICE_SRS_STAGES
@@ -248,11 +249,19 @@ impl<'a> WaniKaniAPIClient<'a> {
             let subject_id = assignment["data"]["subject_id"].as_u64().unwrap();
             let subject_type = assignment["data"]["subject_type"].as_str().unwrap();
 
-            // TODO: UnknownSubjectError
             let subject = match subject_type {
-                "radical" => Subject::Radical(db.radical[&subject_id].clone()),
-                "kanji" => Subject::Kanji(db.kanji[&subject_id].clone()),
-                "vocabulary" => Subject::Vocabulary(db.vocabulary[&subject_id].clone()),
+                "radical" => match db.radical.get(&subject_id) {
+                    Some(radical) => Subject::Radical(radical.clone()),
+                    None => bail!("Unknown radical: {}", &subject_id),
+                },
+                "kanji" => match db.kanji.get(&subject_id) {
+                    Some(kanji) => Subject::Kanji(kanji.clone()),
+                    None => bail!("Unknown kanji: {}", &subject_id),
+                },
+                "vocabulary" => match db.vocabulary.get(&subject_id) {
+                    Some(vocabulary) => Subject::Vocabulary(vocabulary.clone()),
+                    None => bail!("Unknown vocabulary: {}", &subject_id),
+                },
                 _ => unreachable!(),
             };
 
@@ -278,6 +287,7 @@ impl<'a> WaniKaniAPIClient<'a> {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::anyhow;
     use mockito::{mock, Matcher};
     use once_cell::sync::OnceCell;
     use pretty_assertions::assert_eq;
@@ -689,7 +699,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_assignments(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
+    async fn test_assignments(client: WaniKaniAPIClient<'_>) -> Result<()> {
         let _m = mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
@@ -783,6 +793,50 @@ mod tests {
                         .unwrap(),
                 },
             ]
+        );
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("radical")]
+    #[case("kanji")]
+    #[case("vocabulary")]
+    #[tokio::test]
+    async fn test_assignments_unknown_subject(
+        #[case] subject_type: &str,
+        client: WaniKaniAPIClient<'_>,
+    ) -> Result<()> {
+        let _m = mock("GET", "/assignments")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 1,
+                            "object": "assignment",
+                            "data": {
+                                "subject_id": 1,
+                                "subject_type": subject_type,
+                                "srs_stage": 1,
+                                "available_at": "2022-07-11T16:00:00.000000Z",
+                            },
+                        },
+                    ],
+                })
+                .to_string(),
+            )
+            .create();
+
+        let db = Database::new();
+
+        assert_eq!(
+            client.assignments(&db).await.unwrap_err().to_string(),
+            anyhow!("Unknown {}: 1", subject_type).to_string(),
         );
 
         Ok(())
