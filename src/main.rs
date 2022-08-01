@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -15,8 +14,6 @@ use chrono_humanize::{Accuracy, HumanTime, Tense};
 use dotenvy::dotenv;
 use git_version::git_version;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tera::Context;
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
@@ -41,15 +38,13 @@ mod models;
 mod resources;
 mod wanikani;
 
-fn display_time_remaining(value: &Value, args: &HashMap<String, Value>) -> tera::Result<Value> {
-    let value = match value {
-        Value::String(s) => DateTime::parse_from_rfc3339(s).expect("unable to parse DateTime"),
-        _ => unimplemented!(),
-    };
-    let now = match args.get("now").expect("missing argument 'now'") {
-        Value::String(s) => DateTime::parse_from_rfc3339(s).expect("unable to parse DateTime"),
-        _ => unimplemented!(),
-    };
+fn display_time_remaining(
+    _state: &minijinja::State,
+    value: String,
+    now: String,
+) -> Result<String, minijinja::Error> {
+    let value = DateTime::parse_from_rfc3339(&value).expect("unable to parse DateTime");
+    let now = DateTime::parse_from_rfc3339(&now).expect("unable to parse DateTime");
     let delta = value.signed_duration_since(now);
 
     let formatted = if delta.num_seconds() > 0 {
@@ -58,7 +53,7 @@ fn display_time_remaining(value: &Value, args: &HashMap<String, Value>) -> tera:
         "now".to_string()
     };
 
-    Ok(Value::String(formatted))
+    Ok(formatted)
 }
 
 async fn index(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
@@ -89,10 +84,9 @@ async fn login_get(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoRespons
     } else {
         Html::from(
             TEMPLATES
-                .render(
-                    "login.html",
-                    &Context::from_serialize(&LoginContext::logged_out(false)).unwrap(),
-                )
+                .get_template("login.html")
+                .unwrap()
+                .render(LoginContext::logged_out(false))
                 .unwrap(),
         )
         .into_response()
@@ -128,10 +122,9 @@ async fn login_post(
                     StatusCode::UNAUTHORIZED,
                     Html::from(
                         TEMPLATES
-                            .render(
-                                "login.html",
-                                &Context::from_serialize(&LoginContext::logged_out(true)).unwrap(),
-                            )
+                            .get_template("login.html")
+                            .unwrap()
+                            .render(LoginContext::logged_out(true))
                             .unwrap(),
                     ),
                 )
@@ -201,11 +194,9 @@ async fn assignments(
 
     Html::from(
         TEMPLATES
-            .render(
-                "assignments.html",
-                &Context::from_serialize(&AssignmentContext::new(radicals, kanji, vocabulary))
-                    .unwrap(),
-            )
+            .get_template("assignments.html")
+            .unwrap()
+            .render(AssignmentContext::new(radicals, kanji, vocabulary))
             .unwrap(),
     )
     .into_response()
@@ -385,6 +376,7 @@ async fn main() -> reqwest::Result<()> {
 mod tests {
     use axum::body::Body;
     use axum::http::{header, Request, StatusCode};
+    use minijinja::{context, Environment};
     use mockito::mock;
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
@@ -713,10 +705,12 @@ mod tests {
     #[case("2022-01-01T01:45:00Z", "2022-01-01T00:00:00Z", "in 2 hours")]
     #[case("2022-01-01T00:20:00Z", "2022-01-01T00:00:00Z", "in 20 minutes")]
     fn test_display_time_remaining(#[case] value: &str, #[case] now: &str, #[case] expected: &str) {
-        let args = HashMap::from([("now".to_string(), Value::String(now.to_string()))]);
-        assert_eq!(
-            display_time_remaining(&Value::String(value.to_string()), &args).unwrap(),
-            expected.to_string()
-        );
+        let mut env = Environment::new();
+        env.add_filter("display_time_remaining", display_time_remaining);
+        env.add_template("test", "{{ value | display_time_remaining(now) }}")
+            .unwrap();
+
+        let tmpl = env.get_template("test").unwrap();
+        assert_eq!(tmpl.render(context! { value, now }).unwrap(), expected);
     }
 }

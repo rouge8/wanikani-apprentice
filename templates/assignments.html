@@ -15,15 +15,15 @@
           <div class="card col-md-3 col-6">
             <p class="radical">
               <a href="{{ radical.subject.Radical.document_url }}">
-                {% if radical.subject.Radical.characters.length %}
+                {% if radical.subject.Radical.characters | length %}
                   {{ radical.subject.Radical.characters }}
                 {% else %}
                   <img src="{{ "/radical-svg/" ~ radical.subject.Radical.character_svg_path }}" alt="radical for {{ radical.subject.Radical.meanings[0] }}" />
                 {% endif %}
               </a>
             </p>
-            <p>{{ radical.subject.Radical.meanings | join(sep=", ")}}</p>
-            <p class="fst-italic">Review {{ radical.available_at | display_time_remaining(now=now) }}</p>
+            <p>{{ radical.subject.Radical.meanings | join(", ")}}</p>
+            <p class="fst-italic">Review {{ radical.available_at | display_time_remaining(now) }}</p>
           </div>
         {% endfor %}
       </div>
@@ -41,9 +41,9 @@
                 {{ k.subject.Kanji.characters }}
               </a>
             </p>
-            <p>{{ k.subject.Kanji.readings | join(sep=", ")}}</p>
-            <p>{{ k.subject.Kanji.meanings | join(sep=", ")}}</p>
-            <p class="fst-italic">Review {{ k.available_at | display_time_remaining(now=now) }}</p>
+            <p>{{ k.subject.Kanji.readings | join(", ")}}</p>
+            <p>{{ k.subject.Kanji.meanings | join(", ")}}</p>
+            <p class="fst-italic">Review {{ k.available_at | display_time_remaining(now) }}</p>
           </div>
         {% endfor %}
       </div>
@@ -61,9 +61,9 @@
                 {{ v.subject.Vocabulary.characters }}
               </a>
             </p>
-            <p>{{ v.subject.Vocabulary.readings | join(sep=", ") }}</p>
-            <p>{{ v.subject.Vocabulary.meanings | join(sep=", ")}}</p>
-            <p class="fst-italic">Review {{ v.available_at | display_time_remaining(now=now) }}</p>
+            <p>{{ v.subject.Vocabulary.readings | join(", ") }}</p>
+            <p>{{ v.subject.Vocabulary.meanings | join(", ")}}</p>
+            <p class="fst-italic">Review {{ v.available_at | display_time_remaining(now) }}</p>
           </div>
         {% endfor %}
       </div>
