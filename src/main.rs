@@ -543,6 +543,7 @@ mod tests {
             )
             .unwrap();
             assert!(body.contains("is-invalid"));
+            assert!(body.contains("Invalid API key."));
         }
     }
 
