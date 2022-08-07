@@ -1505,9 +1505,12 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "359fdd1be4c5ecf03ffa7b21bc865836159590d0f6d114bbabd1e9c9be4c513e"
 dependencies = [
+ "http",
+ "pin-project",
  "sentry-core",
  "tower-layer",
  "tower-service",
+ "url",
 ]
 
 [[package]]
