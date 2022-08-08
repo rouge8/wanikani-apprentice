@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.59"
+anyhow = "1.0.60"
 axum = "0.5.14"
 axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 chrono = { version = "0.4.20", features = ["serde"] }
