@@ -11,7 +11,7 @@ chrono = { version = "0.4.21", features = ["serde"] }
 chrono-humanize = "0.2.1"
 dotenvy = "0.15.1"
 envy = "0.4.2"
-futures = "0.3.21"
+futures = "0.3.23"
 git-version = "0.3.5"
 hyper = "0.14.20"
 include_dir = "0.7.2"
