@@ -15,7 +15,7 @@
           <div class="card col-md-3 col-6">
             <p class="radical">
               <a href="{{ radical.subject.Radical.document_url }}">
-                {% if radical.subject.Radical.characters | length %}
+                {% if radical.subject.Radical.characters %}
                   {{ radical.subject.Radical.characters }}
                 {% else %}
                   <img src="{{ "/radical-svg/" ~ radical.subject.Radical.character_svg_path }}" alt="radical for {{ radical.subject.Radical.meanings[0] }}" />
