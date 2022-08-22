@@ -9,7 +9,7 @@ axum = "0.5.15"
 axum-extra = { version = "0.3.7", features = ["cookie-private"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 chrono-humanize = "0.2.2"
-dotenvy = "0.15.1"
+dotenvy = "0.15.2"
 envy = "0.4.2"
 futures = "0.3.23"
 git-version = "0.3.5"
