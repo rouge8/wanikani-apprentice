@@ -290,9 +290,9 @@ mod tests {
     use anyhow::anyhow;
     use mockito::{mock, Matcher};
     use once_cell::sync::OnceCell;
-    use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
     use serde_json::json;
+    use similar_asserts::assert_eq;
 
     use super::*;
 

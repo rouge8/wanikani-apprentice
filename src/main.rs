@@ -379,9 +379,9 @@ mod tests {
     use axum::http::{header, Request, StatusCode};
     use minijinja::{context, Environment};
     use mockito::mock;
-    use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
     use serde_json::json;
+    use similar_asserts::assert_eq;
     use tower::ServiceExt;
 
     use super::*;
@@ -403,7 +403,7 @@ mod tests {
     }
 
     mod index {
-        use pretty_assertions::assert_eq;
+        use similar_asserts::assert_eq;
 
         use super::*;
 
@@ -456,7 +456,7 @@ mod tests {
     }
 
     mod login {
-        use pretty_assertions::assert_eq;
+        use similar_asserts::assert_eq;
 
         use super::*;
 
@@ -589,7 +589,7 @@ mod tests {
     }
 
     mod assignments {
-        use pretty_assertions::assert_eq;
+        use similar_asserts::assert_eq;
 
         use super::*;
 
@@ -641,7 +641,7 @@ mod tests {
     }
 
     mod lb_heartbeat {
-        use pretty_assertions::assert_eq;
+        use similar_asserts::assert_eq;
 
         use super::*;
 
