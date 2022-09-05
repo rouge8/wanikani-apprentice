@@ -38,22 +38,16 @@ mod models;
 mod resources;
 mod wanikani;
 
-fn display_time_remaining(
-    _state: &minijinja::State,
-    value: String,
-    now: String,
-) -> Result<String, minijinja::Error> {
+fn display_time_remaining(_state: &minijinja::State, value: String, now: String) -> String {
     let value = DateTime::parse_from_rfc3339(&value).expect("unable to parse DateTime");
     let now = DateTime::parse_from_rfc3339(&now).expect("unable to parse DateTime");
     let delta = value.signed_duration_since(now);
 
-    let formatted = if delta.num_seconds() > 0 {
+    if delta.num_seconds() > 0 {
         HumanTime::from(delta).to_text_en(Accuracy::Rough, Tense::Future)
     } else {
         "now".to_string()
-    };
-
-    Ok(formatted)
+    }
 }
 
 async fn index(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoResponse {
