@@ -450,9 +450,9 @@ dependencies = [
 
 [[package]]
 name = "dotenvy"
-version = "0.15.4"
+version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93781464167347fd349039f09a29c67bb40c092b0a5f01b03cb8a20a8b1995e9"
+checksum = "ed9155c8f4dc55c7470ae9da3f63c6785245093b3f6aeb0f5bf2e968efbba314"
 dependencies = [
  "dirs",
 ]
