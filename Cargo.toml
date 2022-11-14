@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.66"
 axum = "0.5.17"
 axum-extra = { version = "0.3.7", features = ["cookie-private"] }
-chrono = { version = "0.4.22", features = ["serde"] }
+chrono = { version = "0.4.23", features = ["serde"] }
 chrono-humanize = "0.2.2"
 dotenvy = "0.15.6"
 envy = "0.4.2"
