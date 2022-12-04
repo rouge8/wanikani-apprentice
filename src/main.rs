@@ -1,13 +1,13 @@
 use std::fmt;
 use std::net::SocketAddr;
-use std::sync::Arc;
 
 use axum::body::{self, Empty, Full};
-use axum::extract::{FromRequest, Path, RequestParts};
+use axum::extract::{FromRef, FromRequestParts, Path, State};
+use axum::http::request::Parts;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
-use axum::{async_trait, Extension, Form, Router};
+use axum::{async_trait, Form, Router};
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
 use chrono::{DateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
@@ -87,15 +87,15 @@ async fn login_get(wanikani_api_key: Option<WaniKaniAPIKey>) -> impl IntoRespons
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 struct LoginForm {
     api_key: String,
 }
 
 async fn login_post(
-    Form(input): Form<LoginForm>,
     jar: PrivateCookieJar,
-    state: Extension<Arc<State>>,
+    State(state): State<AppState>,
+    Form(input): Form<LoginForm>,
 ) -> impl IntoResponse {
     let api_key = input.api_key.trim().to_string();
     let api = WaniKaniAPIClient::new(&api_key, &state.http_client);
@@ -163,16 +163,17 @@ impl AssignmentContext {
 
 async fn assignments(
     wanikani_api_key: WaniKaniAPIKey,
-    state: Extension<Arc<State>>,
+    State(http_client): State<reqwest::Client>,
+    State(db): State<Database>,
 ) -> impl IntoResponse {
-    let api = WaniKaniAPIClient::new(&wanikani_api_key.to_string(), &state.http_client);
+    let api = WaniKaniAPIClient::new(&wanikani_api_key.to_string(), &http_client);
 
     let mut radicals = Vec::new();
     let mut kanji = Vec::new();
     let mut vocabulary = Vec::new();
 
     let mut assignments = api
-        .assignments(&state.db)
+        .assignments(&db)
         .await
         .expect("failed fetching assignments");
 
@@ -197,7 +198,10 @@ async fn assignments(
 }
 
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
-async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> impl IntoResponse {
+async fn radical_svg(
+    Path(path): Path<String>,
+    State(http_client): State<reqwest::Client>,
+) -> impl IntoResponse {
     #[cfg(not(test))]
     let base_url = "https://files.wanikani.com";
     #[cfg(test)]
@@ -205,8 +209,7 @@ async fn radical_svg(Path(path): Path<String>, state: Extension<Arc<State>>) -> 
 
     let url = format!("{base_url}/{path}");
     info!(url, "downloading SVG");
-    let resp = state
-        .http_client
+    let resp = http_client
         .get(url)
         .send()
         .await
@@ -249,9 +252,11 @@ async fn test_500() {
     let _ = 1 / 0;
 }
 
-struct State {
+#[derive(Clone, FromRef)]
+struct AppState {
     db: Database,
     http_client: reqwest::Client,
+    key: Key,
 }
 
 struct WaniKaniAPIKey(String);
@@ -263,14 +268,15 @@ impl fmt::Display for WaniKaniAPIKey {
 }
 
 #[async_trait]
-impl<B> FromRequest<B> for WaniKaniAPIKey
+impl<S> FromRequestParts<S> for WaniKaniAPIKey
 where
-    B: Send,
+    S: Send + Sync,
+    Key: FromRef<S>,
 {
     type Rejection = (StatusCode, Redirect);
 
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let jar = PrivateCookieJar::<Key>::from_request(req)
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let jar = PrivateCookieJar::<Key>::from_request_parts(parts, state)
             .await
             .map_err(|err| err.into_response());
 
@@ -284,8 +290,12 @@ where
 }
 
 fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Router {
-    let state = Arc::new(State { db, http_client });
     let key = Key::from(&config.session_key.into_bytes());
+    let state = AppState {
+        db,
+        http_client,
+        key,
+    };
 
     Router::new()
         .route("/", get(index))
@@ -313,10 +323,9 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                 .layer(sentry_tower::SentryHttpLayer::with_transaction())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(CompressionLayer::new())
-                .layer(TrustedHostLayer::new(config.trusted_hosts))
-                .layer(Extension(state))
-                .layer(Extension(key)),
+                .layer(TrustedHostLayer::new(config.trusted_hosts)),
         )
+        .with_state(state)
 }
 
 #[tokio::main]

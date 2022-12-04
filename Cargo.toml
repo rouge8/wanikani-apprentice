@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.66"
-axum = "0.5.17"
-axum-extra = { version = "0.3.7", features = ["cookie-private"] }
+axum = { version = "0.6.1", features = ["macros"] }
+axum-extra = { version = "0.4.2", features = ["cookie-private"] }
 chrono = { version = "0.4.23", features = ["serde"] }
 chrono-humanize = "0.2.2"
 dotenvy = "0.15.6"

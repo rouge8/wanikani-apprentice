@@ -29,6 +29,7 @@ pub async fn lb_heartbeat_middleware<B>(
 
 /// Enforce that all incoming requests have a correctly set `Host` header, in order to guard
 /// against HTTP Host Header attacks.
+#[derive(Clone)]
 pub struct TrustedHostLayer {
     trusted_hosts: Vec<String>,
 }

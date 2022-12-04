@@ -5,6 +5,7 @@ use tracing::info;
 use crate::models::{Kanji, Radical, Vocabulary};
 use crate::wanikani::WaniKaniAPIClient;
 
+#[derive(Clone)]
 pub struct Database {
     pub radical: HashMap<u64, Radical>,
     pub kanji: HashMap<u64, Kanji>,
