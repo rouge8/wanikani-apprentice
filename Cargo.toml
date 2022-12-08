@@ -32,6 +32,6 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
-mockito = "0.31.0"
+mockito = "0.31.1"
 rstest = "0.16.0"
 similar-asserts = "1.4.2"
