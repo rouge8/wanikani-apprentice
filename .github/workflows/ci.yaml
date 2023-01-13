@@ -52,7 +52,7 @@ jobs:
           override: false
           components: rustfmt
       - uses: Swatinem/rust-cache@v2.2.0
-      - uses: actions/setup-python@v4.4.0
+      - uses: actions/setup-python@v4.5.0
       - uses: pre-commit/action@v3.0.0
 
   deploy:
