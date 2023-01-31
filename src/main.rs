@@ -333,7 +333,7 @@ async fn main() -> reqwest::Result<()> {
     dotenv().ok();
     let config = match envy::from_env::<Config>() {
         Ok(config) => config,
-        Err(err) => panic!("{:#?}", err),
+        Err(err) => panic!("{err:#?}"),
     };
 
     // Configure Sentry
