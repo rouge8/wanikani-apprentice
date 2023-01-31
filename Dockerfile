@@ -16,6 +16,7 @@ COPY --from=planner /src/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 # Build the application
+RUN git config --global --add safe.directory .
 COPY . .
 RUN cargo install --locked --path .
 
