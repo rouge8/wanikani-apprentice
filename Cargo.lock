@@ -1589,9 +1589,9 @@ dependencies = [
 
 [[package]]
 name = "sentry-backtrace"
-version = "0.29.2"
+version = "0.29.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d92d1e4d591534ae4f872d6142f3b500f4ffc179a6aed8a3e86c7cc96d10a6a"
+checksum = "3ed6c0254d4cce319800609aa0d41b486ee57326494802045ff27434fc9a2030"
 dependencies = [
  "backtrace",
  "once_cell",
