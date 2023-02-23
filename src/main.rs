@@ -200,20 +200,18 @@ async fn assignments(
 /// Mirror the WaniKani radical SVGs, replacing the `stroke` color with our primary color.
 async fn radical_svg(
     Path(path): Path<String>,
+    State(wanikani_files_server_url): State<WaniKaniFilesServerURL>,
     State(http_client): State<reqwest::Client>,
 ) -> impl IntoResponse {
-    #[cfg(not(test))]
-    let base_url = "https://files.wanikani.com";
-    #[cfg(test)]
-    let base_url = mockito::server_url();
-
-    let url = format!("{base_url}/{path}");
+    let url = format!("{wanikani_files_server_url}/{path}");
     info!(url, "downloading SVG");
+    dbg!(&url);
     let resp = http_client
         .get(url)
         .send()
         .await
         .expect("failed to request SVG");
+    dbg!(&resp);
     resp.error_for_status_ref().expect("failed to download SVG");
     let svg = resp
         .text()
@@ -257,6 +255,7 @@ struct AppState {
     db: Database,
     http_client: reqwest::Client,
     key: Key,
+    wanikani_files_server_url: WaniKaniFilesServerURL,
 }
 
 struct WaniKaniAPIKey(String);
@@ -264,6 +263,21 @@ struct WaniKaniAPIKey(String);
 impl fmt::Display for WaniKaniAPIKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct WaniKaniFilesServerURL(String);
+
+impl fmt::Display for WaniKaniFilesServerURL {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Default for WaniKaniFilesServerURL {
+    fn default() -> Self {
+        Self("https://files.wanikani.com".to_string())
     }
 }
 
@@ -295,6 +309,7 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
         db,
         http_client,
         key,
+        wanikani_files_server_url: WaniKaniFilesServerURL(config.wanikani_files_server_url),
     };
 
     Router::new()
@@ -381,7 +396,6 @@ mod tests {
     use axum::body::Body;
     use axum::http::{header, Request, StatusCode};
     use minijinja::{context, Environment};
-    use mockito::mock;
     use rstest::{fixture, rstest};
     use serde_json::json;
     use similar_asserts::assert_eq;
@@ -390,10 +404,16 @@ mod tests {
     use super::*;
 
     #[fixture]
-    fn app() -> Router {
+    async fn server() -> mockito::ServerGuard {
+        mockito::Server::new_async().await
+    }
+
+    #[fixture]
+    async fn app(#[future] server: mockito::ServerGuard) -> Router {
         create_app(
             Config {
                 wanikani_api_key: "fake-key".to_string(),
+                wanikani_files_server_url: server.await.url(),
                 session_key: "58dea9de79168641df396a89d4b80a83db10c44e0d9e51248d1cf8a17c9e8224"
                     .to_string(),
                 bind_address: "127.0.0.1:0".to_string(),
@@ -412,11 +432,15 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn logged_in(app: Router) {
-            let _m = mock("GET", "/user")
+        async fn logged_in(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+            let app = app.await;
+            let _m = server
+                .await
+                .mock("GET", "/user")
                 .with_status(200)
                 .with_body(json!({"data": {"username": "test-user"}}).to_string())
-                .create();
+                .create_async()
+                .await;
 
             let resp = app
                 .clone()
@@ -448,8 +472,9 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn logged_out(app: Router) {
+        async fn logged_out(#[future] app: Router) {
             let resp = app
+                .await
                 .oneshot(Request::get("/").body(Body::empty()).unwrap())
                 .await
                 .unwrap();
@@ -465,11 +490,15 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn already_logged_in(app: Router) {
-            let _m = mock("GET", "/user")
+        async fn already_logged_in(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+            let app = app.await;
+            let _m = server
+                .await
+                .mock("GET", "/user")
                 .with_status(200)
                 .with_body(json!({"data": {"username": "test-user"}}).to_string())
-                .create();
+                .create_async()
+                .await;
 
             let resp = app
                 .clone()
@@ -501,13 +530,17 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn valid_api_key(app: Router) {
-            let _m = mock("GET", "/user")
+        async fn valid_api_key(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+            let _m = server
+                .await
+                .mock("GET", "/user")
                 .with_status(200)
                 .with_body(json!({"data": {"username": "test-user"}}).to_string())
-                .create();
+                .create_async()
+                .await;
 
             let resp = app
+                .await
                 .oneshot(
                     Request::post("/login")
                         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -525,10 +558,16 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn invalid_api_key(app: Router) {
-            let _m = mock("GET", "/user").with_status(401).create();
+        async fn invalid_api_key(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+            let _m = server
+                .await
+                .mock("GET", "/user")
+                .with_status(401)
+                .create_async()
+                .await;
 
             let resp = app
+                .await
                 .oneshot(
                     Request::post("/login")
                         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
@@ -553,12 +592,18 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn logout(app: Router) {
-        let _m = mock("GET", "/user")
+    async fn logout(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+        let app = app.await;
+        let _m = server
+            .await
+            .mock("GET", "/user")
             .with_status(200)
             .with_body(json!({"data": {"username": "test-user"}}).to_string())
-            .create();
+            .create_async()
+            .await;
+        eprintln!("after creating mock");
 
+        eprintln!("before getting resp");
         let resp = app
             .clone()
             .oneshot(
@@ -569,6 +614,8 @@ mod tests {
             )
             .await
             .unwrap();
+        dbg!(&resp);
+        eprintln!("after getting resp");
         let cookie = resp.headers().get(header::SET_COOKIE).unwrap();
 
         let resp = app
@@ -598,8 +645,9 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn logged_out_redirect(app: Router) {
+        async fn logged_out_redirect(#[future] app: Router) {
             let resp = app
+                .await
                 .oneshot(Request::get("/assignments").body(Body::empty()).unwrap())
                 .await
                 .unwrap();
@@ -610,11 +658,20 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_radical_svg(app: Router) {
-        let _m = mock("GET", "/foo")
+    async fn test_radical_svg(#[future] server: mockito::ServerGuard, #[future] app: Router) {
+        let _ = env_logger::try_init();
+
+        let mut server = server.await;
+        let app = app.await;
+
+        dbg!(&server.url());
+
+        let _m = server
+            .mock("GET", "/foo")
             .with_status(200)
             .with_body("foo bar stroke:#000 other:#000")
-            .create();
+            .create_async()
+            .await;
 
         let resp = app
             .oneshot(
@@ -624,6 +681,7 @@ mod tests {
             )
             .await
             .unwrap();
+        dbg!(&resp);
         assert_eq!(resp.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
@@ -635,8 +693,9 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_500(app: Router) {
+    async fn test_500(#[future] app: Router) {
         let resp = app
+            .await
             .oneshot(Request::get("/test-500").body(Body::empty()).unwrap())
             .await
             .unwrap();
@@ -650,8 +709,9 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn ok(app: Router) {
+        async fn ok(#[future] app: Router) {
             let resp = app
+                .await
                 .oneshot(
                     Request::get("/__lbheartbeat__")
                         .body(Body::empty())
@@ -667,8 +727,9 @@ mod tests {
 
         #[rstest]
         #[tokio::test]
-        async fn ignores_host_header(app: Router) {
+        async fn ignores_host_header(#[future] app: Router) {
             let resp = app
+                .await
                 .oneshot(
                     Request::get("/__lbheartbeat__")
                         .header(header::HOST, "foo.com")
@@ -686,8 +747,9 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn trusted_host_header(app: Router) {
+    async fn trusted_host_header(#[future] app: Router) {
         let resp = app
+            .await
             .oneshot(
                 Request::get("/")
                     .header(header::HOST, "foo.com")

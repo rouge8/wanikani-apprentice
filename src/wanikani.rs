@@ -35,11 +35,7 @@ const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
 
 impl<'a> WaniKaniAPIClient<'a> {
     pub fn new(api_key: &str, client: &'a reqwest::Client) -> Self {
-        #[cfg(not(test))]
         let base_url = "https://api.wanikani.com/v2".to_string();
-
-        #[cfg(test)]
-        let base_url = mockito::server_url();
 
         Self {
             base_url,
@@ -288,7 +284,7 @@ impl<'a> WaniKaniAPIClient<'a> {
 #[cfg(test)]
 mod tests {
     use anyhow::anyhow;
-    use mockito::{mock, Matcher};
+    use mockito::Matcher;
     use once_cell::sync::OnceCell;
     use rstest::{fixture, rstest};
     use serde_json::json;
@@ -309,10 +305,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_username(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _m = mock("GET", "/user")
+        let mut server = mockito::Server::new_async().await;
+        let _m = server
+            .mock("GET", "/user")
             .with_status(200)
             .with_body(r#"{"data": {"username": "test-user"}}"#)
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(client.username().await?, "test-user");
 
@@ -322,7 +321,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_radicals(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _m = mock("GET", "/subjects")
+        let mut server = mockito::Server::new_async().await;
+        let _m = server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -364,7 +364,7 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+                .create_async().await;
 
         assert_eq!(
             client.radicals().await?,
@@ -394,7 +394,9 @@ mod tests {
     async fn test_radicals_with_character_images(
         client: WaniKaniAPIClient<'_>,
     ) -> reqwest::Result<()> {
-        let _m = mock("GET", "/subjects")
+        let mut server = mockito::Server::new_async().await;
+        let _m = server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -441,7 +443,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.radicals().await?,
@@ -460,7 +463,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_kanji(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _page1 = mock("GET", "/subjects")
+        let mut server = mockito::Server::new_async().await;
+        let _page1 = server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -515,8 +519,9 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
-        let _page2 = mock("GET", "/subjects")
+                .create_async().await;
+        let _page2 = server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -552,7 +557,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.kanji().await?,
@@ -580,7 +586,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_vocabulary(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _page1 = mock("GET", "/subjects")
+        let mut server = mockito::Server::new_async().await;
+        let _page1 = server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -635,8 +642,9 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
-        let _page2 = mock("GET", "/subjects")
+                .create_async().await;
+        let _page2 = server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -672,7 +680,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.vocabulary().await?,
@@ -700,7 +709,9 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_assignments(client: WaniKaniAPIClient<'_>) -> Result<()> {
-        let _m = mock("GET", "/assignments")
+        let mut server = mockito::Server::new_async().await;
+        let _m = server
+            .mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -743,7 +754,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         let radical = Radical {
             id: 1,
@@ -807,7 +819,9 @@ mod tests {
         #[case] subject_type: &str,
         client: WaniKaniAPIClient<'_>,
     ) -> Result<()> {
-        let _m = mock("GET", "/assignments")
+        let mut server = mockito::Server::new_async().await;
+        let _m = server
+            .mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -830,7 +844,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         let db = Database::new();
 
