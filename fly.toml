@@ -1,49 +1,44 @@
 app = "wanikani-apprentice"
-
+primary_region = "lax"
 kill_signal = "SIGINT"
-kill_timeout = 5
-processes = []
+kill_timeout = "5s"
 
-[build]
+[experimental]
+  auto_rollback = true
 
 [env]
+  BIND_ADDRESS = "0.0.0.0:8080"
   SENTRY_DSN = "https://64dfba28156a490999df043f193cfcd3@o1059726.ingest.sentry.io/6048576"
   SENTRY_ENVIRONMENT = "prod"
   TRUSTED_HOSTS = "wk-apprentice.rouge8.com"
-  BIND_ADDRESS = "0.0.0.0:8080"
 
-[experimental]
-  allowed_public_ports = []
-  auto_rollback = true
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "10s"
+    restart_limit = 0
+    method = "get"
+    path = "/__lbheartbeat__"
+    protocol = "http"
 
 [[statics]]
   guest_path = "/app/static"
   url_prefix = "/static"
-
-[[services]]
-  internal_port = 8080
-  processes = ["app"]
-  protocol = "tcp"
-  script_checks = []
-
-  [services.concurrency]
-    hard_limit = 25
-    soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    handlers = ["http"]
-    port = 80
-    force_https = true
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [[services.http_checks]]
-    grace_period = "10s"
-    interval = "10s"
-    timeout = "2s"
-    method = "get"
-    path = "/__lbheartbeat__"
-    protocol = "http"
