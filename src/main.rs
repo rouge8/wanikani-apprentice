@@ -347,13 +347,15 @@ async fn main() -> reqwest::Result<()> {
     };
 
     // Configure Sentry
-    let _guard = sentry::init((
-        config.sentry_dsn.clone(),
-        sentry::ClientOptions {
-            release: Some(git_version!(args = ["--always", "--abbrev=40"]).into()),
-            ..Default::default()
-        },
-    ));
+    let mut opts = sentry::apply_defaults(sentry::ClientOptions {
+        release: Some(git_version!(args = ["--always", "--abbrev=40"]).into()),
+        ..Default::default()
+    });
+    // Disable debug-images: it conflicts with the 'debug = 1' rustc build option:
+    // https://github.com/getsentry/sentry-rust/issues/574
+    opts.integrations.retain(|i| i.name() != "debug-images");
+    opts.default_integrations = false;
+    let _guard = sentry::init((config.sentry_dsn.clone(), opts));
 
     // Configure logging
     let subscriber = FmtSubscriber::builder()
