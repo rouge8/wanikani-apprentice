@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use tracing::info;
 
-use crate::models::{Kanji, Radical, Vocabulary};
+use crate::models::{KanaVocabulary, Kanji, Radical, Vocabulary};
 use crate::wanikani::WaniKaniAPIClient;
 
 #[derive(Clone)]
@@ -10,6 +10,7 @@ pub struct Database {
     pub radical: HashMap<u64, Radical>,
     pub kanji: HashMap<u64, Kanji>,
     pub vocabulary: HashMap<u64, Vocabulary>,
+    pub kana_vocabulary: HashMap<u64, KanaVocabulary>,
 }
 
 impl Database {
@@ -18,6 +19,7 @@ impl Database {
             radical: HashMap::new(),
             kanji: HashMap::new(),
             vocabulary: HashMap::new(),
+            kana_vocabulary: HashMap::new(),
         }
     }
 
@@ -26,12 +28,14 @@ impl Database {
             Self::get_radicals(api),
             Self::get_kanji(api),
             Self::get_vocabulary(api),
+            Self::get_kana_vocabulary(api),
         )?;
 
-        let (radicals, kanji, vocabulary) = result;
+        let (radicals, kanji, vocabulary, kana_vocabulary) = result;
         self.radical.extend(radicals);
         self.kanji.extend(kanji);
         self.vocabulary.extend(vocabulary);
+        self.kana_vocabulary.extend(kana_vocabulary);
 
         Ok(())
     }
@@ -67,6 +71,19 @@ impl Database {
             result.insert(vocabulary.id, vocabulary);
         }
         info!(n = result.len(), "loaded vocabulary");
+
+        Ok(result)
+    }
+
+    async fn get_kana_vocabulary(
+        api: &WaniKaniAPIClient<'_>,
+    ) -> reqwest::Result<HashMap<u64, KanaVocabulary>> {
+        let mut result = HashMap::new();
+
+        for kana_vocabulary in api.kana_vocabulary().await? {
+            result.insert(kana_vocabulary.id, kana_vocabulary);
+        }
+        info!(n = result.len(), "loaded kana_vocabulary");
 
         Ok(result)
     }

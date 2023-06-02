@@ -142,6 +142,7 @@ struct AssignmentContext {
     radicals: Vec<Assignment>,
     kanji: Vec<Assignment>,
     vocabulary: Vec<Assignment>,
+    kana_vocabulary: Vec<Assignment>,
     now: DateTime<Utc>,
 }
 
@@ -150,12 +151,14 @@ impl AssignmentContext {
         radicals: Vec<Assignment>,
         kanji: Vec<Assignment>,
         vocabulary: Vec<Assignment>,
+        kana_vocabulary: Vec<Assignment>,
     ) -> Self {
         Self {
             is_logged_in: true,
             radicals,
             kanji,
             vocabulary,
+            kana_vocabulary,
             now: Utc::now(),
         }
     }
@@ -171,6 +174,7 @@ async fn assignments(
     let mut radicals = Vec::new();
     let mut kanji = Vec::new();
     let mut vocabulary = Vec::new();
+    let mut kana_vocabulary = Vec::new();
 
     let mut assignments = api
         .assignments(&db)
@@ -184,6 +188,7 @@ async fn assignments(
             Subject::Radical(_) => radicals.push(assignment),
             Subject::Kanji(_) => kanji.push(assignment),
             Subject::Vocabulary(_) => vocabulary.push(assignment),
+            Subject::KanaVocabulary(_) => kana_vocabulary.push(assignment),
         }
     }
 
@@ -191,7 +196,12 @@ async fn assignments(
         TEMPLATES
             .get_template("assignments.html")
             .unwrap()
-            .render(AssignmentContext::new(radicals, kanji, vocabulary))
+            .render(AssignmentContext::new(
+                radicals,
+                kanji,
+                vocabulary,
+                kana_vocabulary,
+            ))
             .unwrap(),
     )
     .into_response()

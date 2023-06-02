@@ -6,6 +6,7 @@ pub enum Subject {
     Radical(Radical),
     Kanji(Kanji),
     Vocabulary(Vocabulary),
+    KanaVocabulary(KanaVocabulary),
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, Clone)]
@@ -33,6 +34,14 @@ pub struct Vocabulary {
     pub characters: String,
     pub meanings: Vec<String>,
     pub readings: Vec<String>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, Clone)]
+pub struct KanaVocabulary {
+    pub id: u64,
+    pub document_url: String,
+    pub characters: String,
+    pub meanings: Vec<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, Clone)]

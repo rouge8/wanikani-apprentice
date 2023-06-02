@@ -7,7 +7,7 @@ use serde_json::Value;
 use tracing::info;
 
 use crate::db::Database;
-use crate::models::{Assignment, Kanji, Radical, Subject, Vocabulary};
+use crate::models::{Assignment, KanaVocabulary, Kanji, Radical, Subject, Vocabulary};
 
 pub struct WaniKaniAPIClient<'a> {
     pub base_url: String,
@@ -19,6 +19,7 @@ enum SubjectType {
     Radical,
     Kanji,
     Vocabulary,
+    KanaVocabulary,
 }
 
 impl ToString for SubjectType {
@@ -27,6 +28,7 @@ impl ToString for SubjectType {
             SubjectType::Radical => "radical".to_string(),
             SubjectType::Kanji => "kanji".to_string(),
             SubjectType::Vocabulary => "vocabulary".to_string(),
+            SubjectType::KanaVocabulary => "kana_vocabulary".to_string(),
         }
     }
 }
@@ -228,6 +230,38 @@ impl<'a> WaniKaniAPIClient<'a> {
         Ok(results)
     }
 
+    pub async fn kana_vocabulary(&self) -> reqwest::Result<Vec<KanaVocabulary>> {
+        let mut results = Vec::new();
+
+        for kana_vocab in self.subjects(SubjectType::KanaVocabulary).await? {
+            results.push(KanaVocabulary {
+                id: kana_vocab["id"].as_u64().unwrap(),
+                document_url: kana_vocab["data"]["document_url"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                characters: kana_vocab["data"]["characters"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                meanings: kana_vocab["data"]["meanings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(|meaning| {
+                        if meaning["accepted_answer"].as_bool().unwrap() {
+                            Some(meaning["meaning"].as_str().unwrap().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            })
+        }
+
+        Ok(results)
+    }
+
     pub async fn assignments(&self, db: &Database) -> Result<Vec<Assignment>> {
         let mut results = Vec::new();
 
@@ -262,7 +296,11 @@ impl<'a> WaniKaniAPIClient<'a> {
                     Some(vocabulary) => Subject::Vocabulary(vocabulary.clone()),
                     None => bail!("Unknown vocabulary: {}", &subject_id),
                 },
-                _ => unreachable!(),
+                "kana_vocabulary" => match db.kana_vocabulary.get(&subject_id) {
+                    Some(kana_vocabulary) => Subject::KanaVocabulary(kana_vocabulary.clone()),
+                    None => bail!("Unknown kana_vocabulary: {}", &subject_id),
+                },
+                _ => bail!("Unknown subject type: {}", &subject_type),
             };
 
             results.push(Assignment {
@@ -699,6 +737,90 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
+    async fn test_kana_vocabulary(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
+        let _page1 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "kana_vocabulary".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 1,
+                            "object": "kana_vocabulary",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/vocabulary/a",
+                                "characters": "a",
+                                "meanings": [
+                                    {"meaning": "a1", "primary": true, "accepted_answer": true},
+                                    {"meaning": "a2", "primary": false, "accepted_answer": false},
+                                    {"meaning": "a3", "primary": false, "accepted_answer": true},
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": format!("{}/subjects?types=kana_vocabulary&hidden=false&page_after_id=1", client.base_url),
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+        let _page2 = mock("GET", "/subjects")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("types".into(), "kana_vocabulary".into()),
+                Matcher::UrlEncoded("hidden".into(), "false".into()),
+                Matcher::UrlEncoded("page_after_id".into(), "1".into()),
+            ]))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "data": [
+                        {
+                            "id": 2,
+                            "object": "kana_vocabulary",
+                            "data": {
+                                "document_url": "https://www.wanikani.com/vocabulary/b",
+                                "characters": "b",
+                                "meanings": [
+                                    {"meaning": "b", "primary": true, "accepted_answer": true},
+                                ],
+                            },
+                        },
+                    ],
+                    "pages": {
+                        "next_url": None::<String>,
+                    },
+                })
+                .to_string(),
+            )
+            .create();
+
+        assert_eq!(
+            client.kana_vocabulary().await?,
+            vec![
+                KanaVocabulary {
+                    id: 1,
+                    document_url: "https://www.wanikani.com/vocabulary/a".to_string(),
+                    characters: "a".to_string(),
+                    meanings: vec!["a1".to_string(), "a3".to_string()],
+                },
+                KanaVocabulary {
+                    id: 2,
+                    document_url: "https://www.wanikani.com/vocabulary/b".to_string(),
+                    characters: "b".to_string(),
+                    meanings: vec!["b".to_string()],
+                },
+            ]
+        );
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[tokio::test]
     async fn test_assignments(client: WaniKaniAPIClient<'_>) -> Result<()> {
         let _m = mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
@@ -739,6 +861,16 @@ mod tests {
                                 "available_at": "2022-07-15T14:00:00.000000Z",
                             },
                         },
+                        {
+                            "id": 4,
+                            "object": "assignment",
+                            "data": {
+                                "subject_id": 4,
+                                "subject_type": "kana_vocabulary",
+                                "srs_stage": 4,
+                                "available_at": "2022-07-16T14:00:00.000000Z",
+                            },
+                        },
                     ],
                 })
                 .to_string(),
@@ -766,10 +898,18 @@ mod tests {
             meanings: vec!["fish".to_string()],
             readings: vec!["さかな".to_string()],
         };
+        let kana_vocabulary = KanaVocabulary {
+            id: 4,
+            document_url: "https://www.wanikani.com/vocabulary/リンゴ".to_string(),
+            characters: "リンゴ".to_string(),
+            meanings: vec!["apple".to_string()],
+        };
+
         let mut db = Database::new();
         db.radical.insert(1, radical.clone());
         db.kanji.insert(2, kanji.clone());
         db.vocabulary.insert(3, vocabulary.clone());
+        db.kana_vocabulary.insert(4, kana_vocabulary.clone());
 
         assert_eq!(
             client.assignments(&db).await?,
@@ -792,6 +932,12 @@ mod tests {
                     available_at: DateTime::parse_from_rfc3339("2022-07-15T14:00:00.000000Z")
                         .unwrap(),
                 },
+                Assignment {
+                    subject: Subject::KanaVocabulary(kana_vocabulary),
+                    srs_stage: 4,
+                    available_at: DateTime::parse_from_rfc3339("2022-07-16T14:00:00.000000Z")
+                        .unwrap(),
+                },
             ]
         );
 
@@ -802,6 +948,7 @@ mod tests {
     #[case("radical")]
     #[case("kanji")]
     #[case("vocabulary")]
+    #[case("kana_vocabulary")]
     #[tokio::test]
     async fn test_assignments_unknown_subject(
         #[case] subject_type: &str,

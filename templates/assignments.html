@@ -69,5 +69,24 @@
       </div>
     {% endif %}
 
+    {% if kana_vocabulary %}
+      <div class="row">
+        <h2>Kana Vocabulary</h2>
+      </div>
+      <div class="row">
+        {% for kv in kana_vocabulary %}
+          <div class="card col-md-4 col-6">
+            <p class="vocabulary">
+              <a href="{{ kv.subject.KanaVocabulary.document_url }}">
+                {{ kv.subject.KanaVocabulary.characters }}
+              </a>
+            </p>
+            <p>{{ kv.subject.KanaVocabulary.meanings | join(", ")}}</p>
+            <p class="fst-italic">Review {{ kv.available_at | display_time_remaining(now) }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
   </div>
 {% endblock %}
