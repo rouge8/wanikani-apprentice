@@ -36,15 +36,9 @@ impl ToString for SubjectType {
 const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
 
 impl<'a> WaniKaniAPIClient<'a> {
-    pub fn new(api_key: &str, client: &'a reqwest::Client) -> Self {
-        #[cfg(not(test))]
-        let base_url = "https://api.wanikani.com/v2".to_string();
-
-        #[cfg(test)]
-        let base_url = mockito::server_url();
-
+    pub fn new(api_key: &str, base_url: &str, client: &'a reqwest::Client) -> Self {
         Self {
-            base_url,
+            base_url: base_url.to_string(),
             api_key: api_key.to_string(),
             client,
         }
@@ -326,7 +320,7 @@ impl<'a> WaniKaniAPIClient<'a> {
 #[cfg(test)]
 mod tests {
     use anyhow::anyhow;
-    use mockito::{mock, Matcher};
+    use mockito::Matcher;
     use once_cell::sync::OnceCell;
     use rstest::{fixture, rstest};
     use serde_json::json;
@@ -337,20 +331,29 @@ mod tests {
     static HTTP_CLIENT: OnceCell<reqwest::Client> = OnceCell::new();
 
     #[fixture]
-    fn client() -> WaniKaniAPIClient<'static> {
+    async fn mockito_server() -> mockito::ServerGuard {
+        mockito::Server::new_async().await
+    }
+
+    fn test_client(server: &mockito::ServerGuard) -> WaniKaniAPIClient<'static> {
         WaniKaniAPIClient::new(
             "fake-api-key",
+            &server.url(),
             HTTP_CLIENT.get_or_init(reqwest::Client::new),
         )
     }
 
     #[rstest]
     #[tokio::test]
-    async fn test_username(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _m = mock("GET", "/user")
+    async fn test_username(#[future] mockito_server: mockito::ServerGuard) -> reqwest::Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _m = mockito_server
+            .mock("GET", "/user")
             .with_status(200)
             .with_body(r#"{"data": {"username": "test-user"}}"#)
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(client.username().await?, "test-user");
 
@@ -359,8 +362,10 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_radicals(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _m = mock("GET", "/subjects")
+    async fn test_radicals(#[future] mockito_server: mockito::ServerGuard) -> reqwest::Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _m = mockito_server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -402,7 +407,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.radicals().await?,
@@ -430,9 +436,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn test_radicals_with_character_images(
-        client: WaniKaniAPIClient<'_>,
+        #[future] mockito_server: mockito::ServerGuard,
     ) -> reqwest::Result<()> {
-        let _m = mock("GET", "/subjects")
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _m = mockito_server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "radical".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -479,7 +488,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.radicals().await?,
@@ -497,8 +507,10 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_kanji(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _page1 = mock("GET", "/subjects")
+    async fn test_kanji(#[future] mockito_server: mockito::ServerGuard) -> reqwest::Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _page1 = mockito_server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -553,8 +565,10 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
-        let _page2 = mock("GET", "/subjects")
+            .create_async()
+            .await;
+        let _page2 = mockito_server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kanji".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -590,7 +604,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.kanji().await?,
@@ -617,8 +632,12 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_vocabulary(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _page1 = mock("GET", "/subjects")
+    async fn test_vocabulary(
+        #[future] mockito_server: mockito::ServerGuard,
+    ) -> reqwest::Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _page1 = mockito_server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -673,8 +692,10 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
-        let _page2 = mock("GET", "/subjects")
+            .create_async()
+            .await;
+        let _page2 = mockito_server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -710,7 +731,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.vocabulary().await?,
@@ -737,8 +759,12 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_kana_vocabulary(client: WaniKaniAPIClient<'_>) -> reqwest::Result<()> {
-        let _page1 = mock("GET", "/subjects")
+    async fn test_kana_vocabulary(
+        #[future] mockito_server: mockito::ServerGuard,
+    ) -> reqwest::Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _page1 = mockito_server.mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kana_vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -767,8 +793,10 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
-        let _page2 = mock("GET", "/subjects")
+            .create_async()
+            .await;
+        let _page2 = mockito_server
+            .mock("GET", "/subjects")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("types".into(), "kana_vocabulary".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -796,7 +824,8 @@ mod tests {
                 })
                 .to_string(),
             )
-            .create();
+            .create_async()
+            .await;
 
         assert_eq!(
             client.kana_vocabulary().await?,
@@ -821,8 +850,11 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn test_assignments(client: WaniKaniAPIClient<'_>) -> Result<()> {
-        let _m = mock("GET", "/assignments")
+    async fn test_assignments(#[future] mockito_server: mockito::ServerGuard) -> Result<()> {
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _m = mockito_server
+            .mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
@@ -952,9 +984,12 @@ mod tests {
     #[tokio::test]
     async fn test_assignments_unknown_subject(
         #[case] subject_type: &str,
-        client: WaniKaniAPIClient<'_>,
+        #[future] mockito_server: mockito::ServerGuard,
     ) -> Result<()> {
-        let _m = mock("GET", "/assignments")
+        let mut mockito_server = mockito_server.await;
+        let client = test_client(&mockito_server);
+        let _m = mockito_server
+            .mock("GET", "/assignments")
             .match_query(Matcher::AllOf(vec![
                 Matcher::UrlEncoded("srs_stages".into(), "1,2,3,4".into()),
                 Matcher::UrlEncoded("hidden".into(), "false".into()),
