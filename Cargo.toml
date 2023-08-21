@@ -34,7 +34,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 [dev-dependencies]
 mockito = "1.1.0"
 rstest = "0.18.2"
-similar-asserts = "1.4.2"
+similar-asserts = "1.5.0"
 
 [profile.release]
 # Enable line numbers in Sentry
