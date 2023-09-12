@@ -23,7 +23,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v2.6.2
+      - uses: Swatinem/rust-cache@v2.7.0
       - name: Run tests
         run: cargo llvm-cov nextest --no-fail-fast --html --color=always
       - name: Upload HTML coverage report
@@ -42,7 +42,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2.6.2
+      - uses: Swatinem/rust-cache@v2.7.0
       - uses: actions/setup-python@v4.7.0
       - uses: pre-commit/action@v3.0.0
 
