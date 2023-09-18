@@ -32,7 +32,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
-mockito = "1.1.0"
+mockito = "1.2.0"
 rstest = "0.18.2"
 similar-asserts = "1.4.2"
 
