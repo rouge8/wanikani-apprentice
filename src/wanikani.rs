@@ -262,10 +262,11 @@ impl<'a> WaniKaniAPIClient<'a> {
         let apprentice_srs_stages = APPRENTICE_SRS_STAGES
             .map(|stage| stage.to_string())
             .join(",");
-        let params = HashMap::from([
-            ("srs_stages", apprentice_srs_stages.as_str()),
-            ("hidden", "false"),
-        ]);
+        let params =
+            HashMap::from([
+                ("srs_stages", apprentice_srs_stages.as_str()),
+                ("hidden", "false"),
+            ]);
         // TODO: Handle possible (but unlikely) pagination
         let resp: Value = self
             .request("assignments", Some(&params))
@@ -348,12 +349,13 @@ mod tests {
     async fn test_username(#[future] mockito_server: mockito::ServerGuard) -> reqwest::Result<()> {
         let mut mockito_server = mockito_server.await;
         let client = test_client(&mockito_server);
-        let _m = mockito_server
-            .mock("GET", "/user")
-            .with_status(200)
-            .with_body(r#"{"data": {"username": "test-user"}}"#)
-            .create_async()
-            .await;
+        let _m =
+            mockito_server
+                .mock("GET", "/user")
+                .with_status(200)
+                .with_body(r#"{"data": {"username": "test-user"}}"#)
+                .create_async()
+                .await;
 
         assert_eq!(client.username().await?, "test-user");
 
@@ -567,45 +569,46 @@ mod tests {
             )
             .create_async()
             .await;
-        let _page2 = mockito_server
-            .mock("GET", "/subjects")
-            .match_query(Matcher::AllOf(vec![
-                Matcher::UrlEncoded("types".into(), "kanji".into()),
-                Matcher::UrlEncoded("hidden".into(), "false".into()),
-                Matcher::UrlEncoded("page_after_id".into(), "1".into()),
-            ]))
-            .with_status(200)
-            .with_body(
-                json!({
-                    "data": [
-                        {
-                            "id": 2,
-                            "object": "kanji",
-                            "data": {
-                                "document_url": "https://www.wanikani.com/kanji/b",
-                                "characters": "b",
-                                "meanings": [
-                                    {"meaning": "b", "primary": true, "accepted_answer": true},
-                                ],
-                                "readings": [
-                                    {
-                                        "type": "type1",
-                                        "primary": true,
-                                        "reading": "b",
-                                        "accepted_answer": true,
-                                    },
-                                ],
+        let _page2 =
+            mockito_server
+                .mock("GET", "/subjects")
+                .match_query(Matcher::AllOf(vec![
+                    Matcher::UrlEncoded("types".into(), "kanji".into()),
+                    Matcher::UrlEncoded("hidden".into(), "false".into()),
+                    Matcher::UrlEncoded("page_after_id".into(), "1".into()),
+                ]))
+                .with_status(200)
+                .with_body(
+                    json!({
+                        "data": [
+                            {
+                                "id": 2,
+                                "object": "kanji",
+                                "data": {
+                                    "document_url": "https://www.wanikani.com/kanji/b",
+                                    "characters": "b",
+                                    "meanings": [
+                                        {"meaning": "b", "primary": true, "accepted_answer": true},
+                                    ],
+                                    "readings": [
+                                        {
+                                            "type": "type1",
+                                            "primary": true,
+                                            "reading": "b",
+                                            "accepted_answer": true,
+                                        },
+                                    ],
+                                },
                             },
+                        ],
+                        "pages": {
+                            "next_url": None::<String>,
                         },
-                    ],
-                    "pages": {
-                        "next_url": None::<String>,
-                    },
-                })
-                .to_string(),
-            )
-            .create_async()
-            .await;
+                    })
+                    .to_string(),
+                )
+                .create_async()
+                .await;
 
         assert_eq!(
             client.kanji().await?,
@@ -694,45 +697,46 @@ mod tests {
             )
             .create_async()
             .await;
-        let _page2 = mockito_server
-            .mock("GET", "/subjects")
-            .match_query(Matcher::AllOf(vec![
-                Matcher::UrlEncoded("types".into(), "vocabulary".into()),
-                Matcher::UrlEncoded("hidden".into(), "false".into()),
-                Matcher::UrlEncoded("page_after_id".into(), "1".into()),
-            ]))
-            .with_status(200)
-            .with_body(
-                json!({
-                    "data": [
-                        {
-                            "id": 2,
-                            "object": "vocabulary",
-                            "data": {
-                                "document_url": "https://www.wanikani.com/vocabulary/b",
-                                "characters": "b",
-                                "meanings": [
-                                    {"meaning": "b", "primary": true, "accepted_answer": true},
-                                ],
-                                "readings": [
-                                    {
-                                        "type": "type1",
-                                        "primary": true,
-                                        "reading": "b",
-                                        "accepted_answer": true,
-                                    },
-                                ],
+        let _page2 =
+            mockito_server
+                .mock("GET", "/subjects")
+                .match_query(Matcher::AllOf(vec![
+                    Matcher::UrlEncoded("types".into(), "vocabulary".into()),
+                    Matcher::UrlEncoded("hidden".into(), "false".into()),
+                    Matcher::UrlEncoded("page_after_id".into(), "1".into()),
+                ]))
+                .with_status(200)
+                .with_body(
+                    json!({
+                        "data": [
+                            {
+                                "id": 2,
+                                "object": "vocabulary",
+                                "data": {
+                                    "document_url": "https://www.wanikani.com/vocabulary/b",
+                                    "characters": "b",
+                                    "meanings": [
+                                        {"meaning": "b", "primary": true, "accepted_answer": true},
+                                    ],
+                                    "readings": [
+                                        {
+                                            "type": "type1",
+                                            "primary": true,
+                                            "reading": "b",
+                                            "accepted_answer": true,
+                                        },
+                                    ],
+                                },
                             },
+                        ],
+                        "pages": {
+                            "next_url": None::<String>,
                         },
-                    ],
-                    "pages": {
-                        "next_url": None::<String>,
-                    },
-                })
-                .to_string(),
-            )
-            .create_async()
-            .await;
+                    })
+                    .to_string(),
+                )
+                .create_async()
+                .await;
 
         assert_eq!(
             client.vocabulary().await?,
