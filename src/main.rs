@@ -103,11 +103,10 @@ async fn login_post(
 
     match api.username().await {
         Ok(_) => {
-            let mut cookie =
-                Cookie::build(COOKIE_NAME, api_key)
-                    .secure(true)
-                    .http_only(true)
-                    .finish();
+            let mut cookie = Cookie::build(COOKIE_NAME, api_key)
+                .secure(true)
+                .http_only(true)
+                .finish();
             cookie.make_permanent();
             let updated_jar = jar.add(cookie);
             (updated_jar, Redirect::to("/assignments")).into_response()
@@ -203,7 +202,12 @@ async fn assignments(
         TEMPLATES
             .get_template("assignments.html")
             .unwrap()
-            .render(AssignmentContext::new(radicals, kanji, vocabulary, kana_vocabulary))
+            .render(AssignmentContext::new(
+                radicals,
+                kanji,
+                vocabulary,
+                kana_vocabulary,
+            ))
             .unwrap(),
     )
     .into_response()
@@ -391,12 +395,11 @@ async fn main() -> reqwest::Result<()> {
         .expect("invalid BIND_ADDRESS");
 
     // Load the WaniKani data
-    let api =
-        WaniKaniAPIClient::new(
-            &config.wanikani_api_key,
-            &config.wanikani_api_url,
-            &http_client,
-        );
+    let api = WaniKaniAPIClient::new(
+        &config.wanikani_api_key,
+        &config.wanikani_api_url,
+        &http_client,
+    );
     let mut db = Database::new();
     db.populate(&api).await?;
 
@@ -681,13 +684,12 @@ mod tests {
     async fn test_radical_svg(#[future] mockito_server: mockito::ServerGuard) {
         let mut mockito_server = mockito_server.await;
         let app = create_test_app(&mockito_server);
-        let _m =
-            mockito_server
-                .mock("GET", "/foo")
-                .with_status(200)
-                .with_body("foo bar stroke:#000 other:#000")
-                .create_async()
-                .await;
+        let _m = mockito_server
+            .mock("GET", "/foo")
+            .with_status(200)
+            .with_body("foo bar stroke:#000 other:#000")
+            .create_async()
+            .await;
 
         let resp = app
             .oneshot(
