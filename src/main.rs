@@ -1,7 +1,7 @@
 use std::fmt;
 use std::net::SocketAddr;
 
-use axum::body::{self, Empty, Full};
+use axum::body::Body;
 use axum::extract::{FromRef, FromRequestParts, Path, State};
 use axum::http::request::Parts;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
@@ -14,6 +14,7 @@ use chrono_humanize::{Accuracy, HumanTime, Tense};
 use dotenvy::dotenv;
 use git_version::git_version;
 use serde::{Deserialize, Serialize};
+use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
@@ -103,16 +104,15 @@ async fn login_post(
 
     match api.username().await {
         Ok(_) => {
-            let mut cookie = Cookie::build(COOKIE_NAME, api_key)
+            let cookie = Cookie::build((COOKIE_NAME, api_key))
                 .secure(true)
                 .http_only(true)
-                .finish();
-            cookie.make_permanent();
+                .permanent();
             let updated_jar = jar.add(cookie);
             (updated_jar, Redirect::to("/assignments")).into_response()
         }
         Err(err) => {
-            if err.status().expect("error during request") == StatusCode::UNAUTHORIZED {
+            if err.status().expect("error during request") == reqwest::StatusCode::UNAUTHORIZED {
                 (
                     StatusCode::UNAUTHORIZED,
                     Html::from(
@@ -132,7 +132,7 @@ async fn login_post(
 }
 
 async fn logout(jar: PrivateCookieJar) -> (PrivateCookieJar, Redirect) {
-    let updated_jar = jar.remove(Cookie::named(COOKIE_NAME));
+    let updated_jar = jar.remove(Cookie::from(COOKIE_NAME));
 
     (updated_jar, Redirect::to("/login"))
 }
@@ -251,11 +251,11 @@ async fn static_file(Path(path): Path<String>) -> impl IntoResponse {
                 header::CONTENT_TYPE,
                 HeaderValue::from_str(mime_type.as_ref()).unwrap(),
             )
-            .body(body::boxed(Full::from(file.contents())))
+            .body(Body::from(file.contents()))
             .unwrap(),
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .body(body::boxed(Empty::new()))
+            .body(Body::empty())
             .unwrap(),
     }
 }
@@ -408,10 +408,8 @@ async fn main() -> reqwest::Result<()> {
 
     // Serve the app
     info!("listening on http://{addr}");
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }
@@ -420,6 +418,7 @@ async fn main() -> reqwest::Result<()> {
 mod tests {
     use axum::body::Body;
     use axum::http::{header, Request, StatusCode};
+    use http_body_util::BodyExt;
     use minijinja::{context, Environment};
     use rstest::{fixture, rstest};
     use serde_json::json;
@@ -427,6 +426,18 @@ mod tests {
     use tower::ServiceExt;
 
     use super::*;
+
+    async fn response_body(resp: Response<Body>) -> String {
+        String::from_utf8(
+            resp.into_body()
+                .collect()
+                .await
+                .unwrap()
+                .to_bytes()
+                .to_vec(),
+        )
+        .unwrap()
+    }
 
     #[fixture]
     async fn mockito_server() -> mockito::ServerGuard {
@@ -604,13 +615,7 @@ mod tests {
                 .unwrap();
             assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 
-            let body = String::from_utf8(
-                hyper::body::to_bytes(resp.into_body())
-                    .await
-                    .unwrap()
-                    .to_vec(),
-            )
-            .unwrap();
+            let body = response_body(resp).await;
             assert!(body.contains("is-invalid"));
             assert!(body.contains("Invalid API key."));
         }
@@ -701,7 +706,7 @@ mod tests {
             .unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+        let body = response_body(resp).await;
         assert_eq!(
             body,
             format!("foo bar stroke:{} other:#000", *BS_PRIMARY_COLOR)
@@ -740,7 +745,7 @@ mod tests {
                 .unwrap();
             assert_eq!(resp.status(), StatusCode::OK);
 
-            let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+            let body = response_body(resp).await;
             assert_eq!(body, "OK");
         }
 
@@ -760,7 +765,7 @@ mod tests {
                 .unwrap();
             assert_eq!(resp.status(), StatusCode::OK);
 
-            let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+            let body = response_body(resp).await;
             assert_eq!(body, "OK");
         }
     }
@@ -781,7 +786,7 @@ mod tests {
             .unwrap();
         assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 
-        let body = hyper::body::to_bytes(resp.into_body()).await.unwrap();
+        let body = response_body(resp).await;
         assert_eq!(body, "Invalid host header");
     }
 

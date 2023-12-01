@@ -1,7 +1,8 @@
 use std::task::{Context, Poll};
 
 use axum::body::Body;
-use axum::http::{header, HeaderValue, Request, StatusCode};
+use axum::extract::Request;
+use axum::http::{header, HeaderValue, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use futures::future::BoxFuture;
@@ -11,10 +12,7 @@ use tower::{Layer, Service};
 ///
 /// This endpoint is intended to be used as a health check for load balancers since it will always
 /// return HTTP 200 if the app is up.
-pub async fn lb_heartbeat_middleware<B>(
-    req: Request<B>,
-    next: Next<B>,
-) -> Result<Response, StatusCode> {
+pub async fn lb_heartbeat_middleware(req: Request, next: Next) -> Result<Response, StatusCode> {
     let path = req.uri().path();
 
     if path == "/__lbheartbeat__" {
