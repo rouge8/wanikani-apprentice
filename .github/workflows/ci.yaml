@@ -44,7 +44,7 @@ jobs:
           components: rustfmt
       - uses: Swatinem/rust-cache@v2.7.3
       - uses: actions/setup-python@v5.0.0
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1
 
   deploy:
     name: Deploy
