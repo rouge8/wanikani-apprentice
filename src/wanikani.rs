@@ -15,22 +15,13 @@ pub struct WaniKaniAPIClient<'a> {
     client: &'a reqwest::Client,
 }
 
+#[derive(strum_macros::Display)]
+#[strum(serialize_all = "snake_case")]
 enum SubjectType {
     Radical,
     Kanji,
     Vocabulary,
     KanaVocabulary,
-}
-
-impl ToString for SubjectType {
-    fn to_string(&self) -> String {
-        match self {
-            SubjectType::Radical => "radical".to_string(),
-            SubjectType::Kanji => "kanji".to_string(),
-            SubjectType::Vocabulary => "vocabulary".to_string(),
-            SubjectType::KanaVocabulary => "kana_vocabulary".to_string(),
-        }
-    }
 }
 
 const APPRENTICE_SRS_STAGES: [u8; 4] = [1, 2, 3, 4];
