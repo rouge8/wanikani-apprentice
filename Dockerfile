@@ -1,4 +1,4 @@
-FROM rust:slim-bullseye AS chef
+FROM rust:slim-bookworm AS chef
 WORKDIR /src
 RUN cargo install cargo-chef
 
@@ -21,7 +21,7 @@ COPY . .
 RUN cargo install --locked --path .
 
 # Bundle the application
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates \
   && apt-get clean
