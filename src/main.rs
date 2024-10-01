@@ -423,7 +423,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use serde_json::json;
     use similar_asserts::assert_eq;
-    use tower::ServiceExt;
+    use tower::util::ServiceExt;
 
     use super::*;
 
