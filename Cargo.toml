@@ -30,7 +30,7 @@ strum_macros = "0.26.2"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
 tower = "0.5.0"
 tower-http = { version = "0.6.1", features = ["catch-panic", "trace", "fs", "compression-full"] }
-tracing = "0.1.37"
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
