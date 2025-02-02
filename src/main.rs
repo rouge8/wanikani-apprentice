@@ -2,12 +2,12 @@ use std::fmt;
 use std::net::SocketAddr;
 
 use axum::body::Body;
-use axum::extract::{FromRef, FromRequestParts, Path, State};
+use axum::extract::{FromRef, FromRequestParts, OptionalFromRequestParts, Path, State};
 use axum::http::request::Parts;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
-use axum::{async_trait, Form, Router};
+use axum::{Form, Router};
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar};
 use chrono::{DateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
@@ -281,7 +281,6 @@ impl fmt::Display for WaniKaniAPIKey {
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for WaniKaniAPIKey
 where
     S: Send + Sync,
@@ -300,6 +299,30 @@ where
             }
         }
         Err((StatusCode::SEE_OTHER, Redirect::to("/login")))
+    }
+}
+
+impl<S> OptionalFromRequestParts<S> for WaniKaniAPIKey
+where
+    S: Send + Sync,
+    Key: FromRef<S>,
+{
+    type Rejection = (StatusCode, Redirect);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        let jar = PrivateCookieJar::<Key>::from_request_parts(parts, state)
+            .await
+            .map_err(|err| err.into_response());
+
+        if let Ok(jar) = jar {
+            if let Some(cookie) = jar.get(COOKIE_NAME) {
+                return Ok(Some(WaniKaniAPIKey(cookie.value().to_string())));
+            }
+        }
+        Ok(None)
     }
 }
 
@@ -337,8 +360,8 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
         .route("/login", post(login_post))
         .route("/logout", get(logout))
         .route("/assignments", get(assignments))
-        .route("/radical-svg/:path", get(radical_svg))
-        .route("/static/:path", get(static_file))
+        .route("/radical-svg/{path}", get(radical_svg))
+        .route("/static/{path}", get(static_file))
         .route("/test-500", get(test_500))
         .layer(
             ServiceBuilder::new()
