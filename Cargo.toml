@@ -35,7 +35,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
 mockito = "1.7.0"
-rstest = "0.24.0"
+rstest = "0.25.0"
 similar-asserts = "1.7.0"
 
 [profile.release]
