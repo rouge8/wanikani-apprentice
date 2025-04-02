@@ -4,39 +4,39 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.75"
-axum = { version = "0.8.1", features = ["macros"] }
-axum-extra = { version = "0.10.0", features = ["cookie-private"] }
-chrono = { version = "0.4.31", features = ["serde"] }
+anyhow = "1.0.97"
+axum = { version = "0.8.3", features = ["macros"] }
+axum-extra = { version = "0.10.1", features = ["cookie-private"] }
+chrono = { version = "0.4.40", features = ["serde"] }
 chrono-humanize = "0.2.3"
 dotenvy = "0.15.7"
 envy = "0.4.2"
-futures = "0.3.28"
-git-version = "0.3.5"
-http-body-util = "0.1.0"
-hyper = "1.0.1"
-include_dir = "0.7.3"
-mime_guess = "2.0.4"
-minijinja = { version = "2.0.1" , features = ["loader"] }
-once_cell = "1.18.0"
-regex = "1.9.5"
-reqwest = { version = "0.12.2", features = ["json"] }
+futures = "0.3.31"
+git-version = "0.3.9"
+http-body-util = "0.1.3"
+hyper = "1.6.0"
+include_dir = "0.7.4"
+mime_guess = "2.0.5"
+minijinja = { version = "2.9.0" , features = ["loader"] }
+once_cell = "1.21.3"
+regex = "1.11.1"
+reqwest = { version = "0.12.15", features = ["json"] }
 sentry = { version = "0.36.0", features = ["tracing", "tower", "tower-axum-matched-path", "tower-http"] }
 sentry-tower = { version = "0.36.0", features = ["http", "axum-matched-path"] }
 sentry-tracing = "0.36.0"
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = "1.0.107"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 strum_macros = "0.27.1"
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
-tower = "0.5.0"
-tower-http = { version = "0.6.1", features = ["catch-panic", "trace", "fs", "compression-full"] }
-tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
+tower = "0.5.2"
+tower-http = { version = "0.6.2", features = ["catch-panic", "trace", "fs", "compression-full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
-mockito = "1.2.0"
+mockito = "1.7.0"
 rstest = "0.24.0"
-similar-asserts = "1.5.0"
+similar-asserts = "1.7.0"
 
 [profile.release]
 # Enable line numbers in Sentry
