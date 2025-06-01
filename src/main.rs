@@ -377,7 +377,7 @@ fn create_app(config: Config, db: Database, http_client: reqwest::Client) -> Rou
                         ),
                 )
                 .layer(sentry_tower::NewSentryLayer::new_from_top())
-                .layer(sentry_tower::SentryHttpLayer::with_transaction())
+                .layer(sentry_tower::SentryHttpLayer::new().enable_transaction())
                 .layer(axum::middleware::from_fn(lb_heartbeat_middleware))
                 .layer(CompressionLayer::new())
                 .layer(TrustedHostLayer::new(config.trusted_hosts)),
