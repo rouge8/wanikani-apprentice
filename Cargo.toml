@@ -4,32 +4,32 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.97"
-axum = { version = "0.8.3", features = ["macros"] }
+anyhow = "1.0.99"
+axum = { version = "0.8.4", features = ["macros"] }
 axum-extra = { version = "0.10.1", features = ["cookie-private"] }
-chrono = { version = "0.4.40", features = ["serde"] }
+chrono = { version = "0.4.42", features = ["serde"] }
 chrono-humanize = "0.2.3"
 dotenvy = "0.15.7"
 envy = "0.4.2"
 futures = "0.3.31"
 git-version = "0.3.9"
 http-body-util = "0.1.3"
-hyper = "1.6.0"
+hyper = "1.7.0"
 include_dir = "0.7.4"
 mime_guess = "2.0.5"
-minijinja = { version = "2.9.0" , features = ["loader"] }
+minijinja = { version = "2.12.0" , features = ["loader"] }
 once_cell = "1.21.3"
-regex = "1.11.1"
-reqwest = { version = "0.12.15", features = ["json"] }
+regex = "1.11.2"
+reqwest = { version = "0.12.23", features = ["json"] }
 sentry = { version = "0.42.0", features = ["tracing", "tower", "tower-axum-matched-path", "tower-http"] }
 sentry-tower = { version = "0.42.0", features = ["http", "axum-matched-path"] }
 sentry-tracing = "0.42.0"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-strum_macros = "0.27.1"
-tokio = { version = "1.44.2", features = ["macros", "rt-multi-thread"] }
+serde_json = "1.0.143"
+strum_macros = "0.27.2"
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 tower = "0.5.2"
-tower-http = { version = "0.6.2", features = ["catch-panic", "trace", "fs", "compression-full"] }
+tower-http = { version = "0.6.6", features = ["catch-panic", "trace", "fs", "compression-full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"] }
 
